@@ -159,7 +159,12 @@ pre#exp{display:none;margin-top:10px;font-size:10px;background:#f1efe8;padding:1
     <button class="rst" onclick="resetAll()">↺ Restaurar</button>
     <button class="exp-btn" onclick="exportar()">Ver resumen ↓</button>
     <button class="prn-btn" onclick="window.print()">🖨 Imprimir</button>
+    <button class="exp-btn" onclick="saveSchedule()">&#128190; Guardar horario</button>
   </div>
+<div class="chart-card" style="margin-top:10px;">
+  <div class="chart-title">&#128190; Horarios guardados</div>
+  <div id="saved-list"><span style="font-size:10px;color:#aaa">No hay horarios guardados aún.</span></div>
+</div>
   <pre id="exp"></pre>
   <div class="hint">
     ← → Arrastra el centro para mover · Extremos para ajustar duración<br>
@@ -749,6 +754,65 @@ function renderAll(){
   renderTabs();renderGantt();renderPersonas();renderChart();renderLegend();renderDescTable();renderResumen();
 }
 
+/* —— GUARDAR / CARGAR HORARIOS —— */
+function getScheduleState(){
+  return {
+    PERSONAS: JSON.parse(JSON.stringify(PERSONAS)),
+    TURNO: JSON.parse(JSON.stringify(TURNO)),
+    DESC_DAY: JSON.parse(JSON.stringify(DESC_DAY)),
+    DEFAULTS: JSON.parse(JSON.stringify(DEFAULTS))
+  };
+}
+function applyScheduleState(s){
+  PERSONAS=s.PERSONAS;
+  TURNO=s.TURNO;
+  DESC_DAY=s.DESC_DAY;
+  DEFAULTS=s.DEFAULTS;
+  buildState();renderAll();
+}
+function saveSchedule(){
+  const nombre=prompt('Nombre para este horario:');
+  if(!nombre||!nombre.trim())return;
+  const key='sumaq_horarios';
+  const saved=JSON.parse(localStorage.getItem(key)||'{}');
+  saved[nombre.trim()]={state:getScheduleState(),fecha:new Date().toLocaleDateString('es-PE')};
+  localStorage.setItem(key,JSON.stringify(saved));
+  renderSavedList();
+  alert('Horario "'+nombre.trim()+'" guardado correctamente.');
+}
+function loadSchedule(nombre){
+  const saved=JSON.parse(localStorage.getItem('sumaq_horarios')||'{}');
+  if(!saved[nombre])return;
+  if(!confirm('\u00bfCargar horario "'+nombre+'"? Se perder\u00e1n los cambios actuales.'))return;
+  applyScheduleState(saved[nombre].state);
+}
+function deleteSchedule(nombre){
+  if(!confirm('\u00bfEliminar horario "'+nombre+'"?'))return;
+  const saved=JSON.parse(localStorage.getItem('sumaq_horarios')||'{}');
+  delete saved[nombre];
+  localStorage.setItem('sumaq_horarios',JSON.stringify(saved));
+  renderSavedList();
+}
+function renderSavedList(){
+  const saved=JSON.parse(localStorage.getItem('sumaq_horarios')||'{}');
+  const names=Object.keys(saved);
+  const box=document.getElementById('saved-list');
+  if(!box)return;
+  if(names.length===0){
+    box.innerHTML='<span style="font-size:10px;color:#aaa">No hay horarios guardados a\u00fan.</span>';
+    return;
+  }
+  box.innerHTML=names.map(n=>`
+    <div style="display:flex;align-items:center;gap:6px;margin-bottom:4px;">
+      <span style="flex:1;font-size:11px;font-weight:600">${n}</span>
+      <span style="font-size:10px;color:#aaa">${saved[n].fecha}</span>
+      <button onclick="loadSchedule('${n.replace(/'/g,"\\'")}')"
+        style="font-size:10px;padding:2px 8px;border:0.5px solid #0f6e56;border-radius:4px;background:#E1F5EE;color:#085041;cursor:pointer;">Cargar</button>
+      <button onclick="deleteSchedule('${n.replace(/'/g,"\\'")}')"
+        style="font-size:10px;padding:2px 8px;border:0.5px solid #E24B4A;border-radius:4px;background:#fff;color:#E24B4A;cursor:pointer;">&#x2715;</button>
+    </div>`).join('');
+}
+renderSavedList();
 buildState();renderTicks();renderAll();
 </script>
 </body>
