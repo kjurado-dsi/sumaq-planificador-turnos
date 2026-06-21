@@ -19,7 +19,7 @@ Archivos modificados:
 Comandos ejecutados:
 - Verificación visual con Playwright (instalado temporalmente en /tmp, no forma parte del repo): se sirvió index.html con `python3 -m http.server` y se confirmó que las 4 secciones cargan colapsadas y se expanden correctamente al hacer clic, sin errores de consola.
 
-Estado de publicación: pendiente de `git push` (no se hizo commit/push aún, a la espera de confirmación del usuario).
+Estado de publicación: publicado con `git push` (commit 45748f5).
 
 Pendientes o riesgos:
 - Ninguno detectado. La funcionalidad existente (edición de turnos, exportar, modal "Ver semana completa", impresión) no se modificó.
