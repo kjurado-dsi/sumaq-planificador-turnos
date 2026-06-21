@@ -185,6 +185,13 @@ pre#exp{display:none;margin-top:10px;font-size:10px;background:#f1efe8;padding:1
 .hv-pos{color:#1D9E75;font-weight:700}
 .hv-neg{color:#E24B4A;font-weight:700}
 .hv-zero{color:#aaa}
+/* COLAPSABLES (estilo hojas Excel: clic para abrir/cerrar) */
+.collapsible-hdr{cursor:pointer;display:flex;align-items:center;justify-content:space-between;user-select:none}
+.collapsible-hdr:hover{opacity:.75}
+.collapsible-arrow{font-size:10px;color:#aaa;transition:transform .15s;flex-shrink:0;margin-left:8px}
+.collapsible.collapsed .collapsible-arrow{transform:rotate(-90deg)}
+.collapsible.collapsed .collapsible-body{display:none}
+.collapsible-hint{font-size:9px;color:#bbb;font-weight:400}
 @media print{
   body{background:#fff;padding:4px;font-size:10px}
   .btns,.hint,.saves-box,.add-slot-btn,.hnd,.del-p,.assign-row,.sub{display:none!important}
@@ -247,24 +254,44 @@ pre#exp{display:none;margin-top:10px;font-size:10px;background:#f1efe8;padding:1
     </div>
     <div id="saves-list"></div>
   </div>
-  <div class="hours-card">
-    <div class="hours-card-title">📊 Comparativa: Régimen anterior (7am–6pm) vs. Horario actual</div>
-    <div id="hours-compare"></div>
+  <div class="hours-card collapsible collapsed">
+    <div class="hours-card-title collapsible-hdr" onclick="toggleCollapsible(this)">
+      <span>📊 Comparativa: Régimen anterior (7am–6pm) vs. Horario actual</span>
+      <span class="collapsible-arrow">▾</span>
+    </div>
+    <div class="collapsible-body">
+      <div id="hours-compare"></div>
+    </div>
   </div>
-  <div class="chart-card">
-    <div class="chart-title">Operatividad semanal por rubro</div>
-    <div id="chart-body"></div>
-    <div style="font-size:10px;color:#aaa;margin-top:6px">Línea roja = 42h referencia mínima</div>
+  <div class="chart-card collapsible collapsed">
+    <div class="chart-title collapsible-hdr" onclick="toggleCollapsible(this)">
+      <span>Operatividad semanal por rubro</span>
+      <span class="collapsible-arrow">▾</span>
+    </div>
+    <div class="collapsible-body">
+      <div id="chart-body"></div>
+      <div style="font-size:10px;color:#aaa;margin-top:6px">Línea roja = 42h referencia mínima</div>
+    </div>
   </div>
-  <div class="desc-box">
-    <div class="desc-title">Cuadro de descansos semanales</div>
-    <div style="font-size:10px;color:#888;margin-bottom:8px">Verde = trabaja · Rojo = descansa · Clic para cambiar</div>
-    <div id="desc-table-wrap"></div>
+  <div class="desc-box collapsible collapsed">
+    <div class="desc-title collapsible-hdr" onclick="toggleCollapsible(this)">
+      <span>Cuadro de descansos semanales</span>
+      <span class="collapsible-arrow">▾</span>
+    </div>
+    <div class="collapsible-body">
+      <div style="font-size:10px;color:#888;margin-bottom:8px">Verde = trabaja · Rojo = descansa · Clic para cambiar</div>
+      <div id="desc-table-wrap"></div>
+    </div>
   </div>
-  <div class="desc-box" style="margin-top:12px">
-    <div class="desc-title">Resumen semanal — apertura de puestos por día</div>
-    <div style="font-size:10px;color:#888;margin-bottom:8px">Verde oscuro = todo el día · Verde claro = parcial · Gris = cerrado</div>
-    <div id="resumen-table-wrap"></div>
+  <div class="desc-box collapsible collapsed" style="margin-top:12px">
+    <div class="desc-title collapsible-hdr" onclick="toggleCollapsible(this)">
+      <span>Resumen semanal — apertura de puestos por día</span>
+      <span class="collapsible-arrow">▾</span>
+    </div>
+    <div class="collapsible-body">
+      <div style="font-size:10px;color:#888;margin-bottom:8px">Verde oscuro = todo el día · Verde claro = parcial · Gris = cerrado</div>
+      <div id="resumen-table-wrap"></div>
+    </div>
   </div>
 </div>
 </div>
@@ -913,6 +940,10 @@ function resetAll(){
   CUSTOM_SCHEDULE={};
   buildState();renderAll();
   document.getElementById('exp').style.display='none';
+}
+
+function toggleCollapsible(hdr){
+  hdr.parentElement.classList.toggle('collapsed');
 }
 
 function renderAll(){
