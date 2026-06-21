@@ -39,7 +39,16 @@ h1{font-size:16px;font-weight:700;color:#0f6e56;margin-bottom:2px}
 .del-p{margin-left:auto;background:none;border:none;color:#ddd;cursor:pointer;font-size:13px;line-height:1}
 .del-p:hover{color:#E24B4A}
 /* TURNO SUMMARY - MUY VISIBLE */
-.summary-card{display:grid;grid-template-columns:1fr 1fr 1fr;gap:0;margin-bottom:10px;border-radius:10px;overflow:hidden;border:1.5px solid #d3d1c7;box-shadow:0 2px 8px rgba(0,0,0,.07)}
+.summary-wrap{margin-bottom:10px;border-radius:10px;overflow:hidden;border:1.5px solid #d3d1c7;box-shadow:0 2px 8px rgba(0,0,0,.07)}
+.summary-hdr-row{display:flex;align-items:center;gap:8px;padding:9px 14px;background:#fff;cursor:pointer;user-select:none}
+.summary-hdr-row:hover{opacity:.8}
+.sum-mini{font-size:11px;font-weight:700;padding:3px 9px;border-radius:20px;display:flex;align-items:center;gap:4px}
+.sum-mini-dia{background:#E1F5EE;color:#085041}
+.sum-mini-tarde{background:#E6F1FB;color:#0C447C}
+.sum-mini-desc{background:#f1efe8;color:#888}
+.summary-wrap .collapsible-arrow{margin-left:auto}
+.summary-wrap.collapsed .collapsible-body{display:none}
+.summary-card{display:grid;grid-template-columns:1fr 1fr 1fr;gap:0;border-radius:0;overflow:hidden;border-top:1.5px solid #d3d1c7}
 .sum-col{padding:12px 14px}
 .sum-col-dia{background:#E1F5EE}
 .sum-col-tarde{background:#E6F1FB}
@@ -81,7 +90,9 @@ h1{font-size:16px;font-weight:700;color:#0f6e56;margin-bottom:2px}
 .cutline-lbl{position:absolute;top:-14px;font-size:9px;color:#A32D2D;font-weight:700;transform:translateX(-50%)}
 .bar{position:absolute;top:3px;bottom:3px;border-radius:5px;display:flex;align-items:stretch;z-index:5;cursor:grab;user-select:none;-webkit-user-select:none}
 .bar.fading{opacity:0.35}
-.bi{flex:1;border-radius:5px;display:flex;align-items:center;overflow:hidden}
+.bi{flex:1;border-radius:5px;display:flex;align-items:center;overflow:hidden;border-top:3px solid transparent;box-sizing:border-box}
+.bi.turno-dia{border-top-color:#F2A93B}
+.bi.turno-tarde{border-top-color:#185FA5}
 .blbl{flex:1;text-align:center;font-size:10px;font-weight:700;pointer-events:none;white-space:nowrap;padding:0 4px}
 .hnd{width:9px;flex-shrink:0;background:rgba(0,0,0,.15);display:flex;align-items:center;justify-content:center;cursor:ew-resize;z-index:6}
 .hnd-l{border-radius:5px 0 0 5px}
@@ -246,6 +257,7 @@ pre#exp{display:none;margin-top:10px;font-size:10px;background:#f1efe8;padding:1
     <button style="font-size:11px;padding:6px 14px;border:0.5px solid #0f6e56;border-radius:6px;background:#fff;color:#0f6e56;cursor:pointer" onclick="showRSM()">📅 Ver semana completa</button>
     <button class="add-p-btn" onclick="showModal()">+ Nueva persona</button>
     <button class="rst" onclick="resetAll()">↺ Restaurar</button>
+    <select id="exp-person" style="font-size:11px;border:0.5px solid #b4b2a9;border-radius:6px;padding:6px 8px;background:#fff;cursor:pointer"></select>
     <button class="exp-btn" onclick="exportar()">Ver resumen ↓</button>
     <button class="prn-btn" onclick="window.print()">🖨 Imprimir</button>
   </div>
@@ -490,12 +502,16 @@ document.addEventListener('mousemove',e=>{
     GD.a.s=ns;GD.a.e=ns+dur;
     GD.bar.style.left=pct(GD.a.s);GD.bar.style.width=wpct(GD.a.e-GD.a.s);
     GD.bar.querySelector('.blbl').textContent=GD.sn+' '+fmt(GD.a.s)+'–'+fmt(GD.a.e);
+    GD.bar.querySelector('.bi').classList.toggle('turno-dia',GD.a.s<12);
+    GD.bar.querySelector('.bi').classList.toggle('turno-tarde',GD.a.s>=12);
     renderPersonas();renderSummary();
   }else if(GD.mode==='rl'){
     const dh=dx/GD.tw*SPAN;
     GD.a.s=Math.max(SH,Math.min(GD.a.e-0.5,snap(GD.ss+dh)));
     GD.bar.style.left=pct(GD.a.s);GD.bar.style.width=wpct(GD.a.e-GD.a.s);
     GD.bar.querySelector('.blbl').textContent=GD.sn+' '+fmt(GD.a.s)+'–'+fmt(GD.a.e);
+    GD.bar.querySelector('.bi').classList.toggle('turno-dia',GD.a.s<12);
+    GD.bar.querySelector('.bi').classList.toggle('turno-tarde',GD.a.s>=12);
     renderPersonas();renderSummary();
   }else if(GD.mode==='rr'){
     const dh=dx/GD.tw*SPAN;
@@ -574,7 +590,16 @@ function renderSummary(){
     ).join('');
   }
 
+  const wasCollapsed=el.querySelector('.summary-wrap')?el.querySelector('.summary-wrap').classList.contains('collapsed'):true;
   el.innerHTML=
+    '<div class="summary-wrap collapsible'+(wasCollapsed?' collapsed':'')+'">'+
+    '<div class="summary-hdr-row collapsible-hdr" onclick="toggleCollapsible(this)">'+
+      '<span class="sum-mini sum-mini-dia">🌅 Día <b>'+dia.length+'</b></span>'+
+      '<span class="sum-mini sum-mini-tarde">🌆 Tarde <b>'+tarde.length+'</b></span>'+
+      '<span class="sum-mini sum-mini-desc">😴 Descanso <b>'+desc.length+'</b></span>'+
+      '<span class="collapsible-arrow">▾</span>'+
+    '</div>'+
+    '<div class="collapsible-body">'+
     '<div class="summary-card">'+
     '<div class="sum-col sum-col-dia">'+
       '<div class="sum-hdr" style="color:#085041">🌅 TURNO DÍA'+
@@ -590,6 +615,8 @@ function renderSummary(){
       '<div class="sum-hdr" style="color:#888">😴 DESCANSO'+
         '<span class="sum-badge sum-badge-desc">'+desc.length+'</span>'+
       '</div>'+mkDesc(desc)+
+    '</div>'+
+    '</div>'+
     '</div>'+
     '</div>';
 }
@@ -713,13 +740,14 @@ function renderGantt(){
       const bh=Math.floor(34/total);
       const bt=3+r*bh,bb=3+(r+1)*bh;
       const pc=barColor(p,col);
+      const turnoCls=a.s<12?'turno-dia':'turno-tarde';
       const bar=document.createElement('div');
       bar.className='bar';
       bar.style.cssText='left:'+pct(a.s)+';width:'+wpct(a.e-a.s)+';top:'+bt+'px;bottom:'+(40-bb)+'px';
       const sn=p.name.split(' ')[0];
       const lbl=sn+' '+fmt(a.s)+'–'+fmt(a.e);
       bar.innerHTML='<div class="hnd hnd-l" data-role="l"></div>'+
-        '<div class="bi" style="background:'+pc.bg+'"><span class="blbl" style="color:'+pc.tc+'">'+lbl+'</span></div>'+
+        '<div class="bi '+turnoCls+'" style="background:'+pc.bg+'"><span class="blbl" style="color:'+pc.tc+'">'+lbl+'</span></div>'+
         '<div class="hnd hnd-r" data-role="r"></div>';
       bar.addEventListener('mousedown',e=>{
         if(e.button!==0)return;
@@ -766,7 +794,9 @@ function renderLegend(){
     '<div class="li"><div class="ld" style="background:#9FE1CB"></div>Pasillo</div>'+
     '<div class="li"><div class="ld" style="background:#EF9F27"></div>Zona bajos</div>'+
     '<div class="li"><div class="ld" style="background:#85B7EB"></div>Osmary pivote</div>'+
-    '<div class="li"><div class="ld" style="background:#534AB7"></div>Alma pivote</div>';
+    '<div class="li"><div class="ld" style="background:#534AB7"></div>Alma pivote</div>'+
+    '<div class="li"><div class="ld" style="background:#9FE1CB;border-top:3px solid #F2A93B"></div>Borde = turno mañana</div>'+
+    '<div class="li"><div class="ld" style="background:#9FE1CB;border-top:3px solid #185FA5"></div>Borde = turno tarde</div>';
 }
 
 /* ─── DESCANSOS ─── */
@@ -836,9 +866,18 @@ function renderResumen(){
 }
 
 /* ─── EXPORT ─── */
+function renderExpPersonOpts(){
+  const sel=document.getElementById('exp-person');if(!sel)return;
+  const prev=sel.value;
+  sel.innerHTML='<option value="">Todas las personas</option>'+
+    PERSONAS.map(p=>'<option value="'+p.id+'">'+p.name+'</option>').join('');
+  if(prev&&PERSONAS.some(p=>p.id===prev))sel.value=prev;
+}
 function exportar(){
-  const lines=['SUMAQ — Resumen de horarios','='.repeat(52),''];
-  PERSONAS.forEach(p=>{
+  const pid=document.getElementById('exp-person')?.value||'';
+  const list=pid?PERSONAS.filter(p=>p.id===pid):PERSONAS;
+  const lines=[pid?('SUMAQ — Horario de '+list[0].name):'SUMAQ — Resumen de horarios','='.repeat(52),''];
+  list.forEach(p=>{
     lines.push('▸ '+p.name+(p.pivot?'  [PIVOTE]':''));
     for(let d=0;d<7;d++){
       const s=state[d]?.[p.id];
@@ -964,7 +1003,7 @@ if(localStorage.getItem('sidebarCollapsed')==='1'){
 
 function renderAll(){
   renderSummary();renderHoursCompare();renderTabs();renderGantt();renderPersonas();
-  renderChart();renderLegend();renderDescTable();renderResumen();renderSaves();
+  renderChart();renderLegend();renderDescTable();renderResumen();renderSaves();renderExpPersonOpts();
 }
 
 
