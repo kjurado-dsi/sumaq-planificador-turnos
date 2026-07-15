@@ -1,0 +1,707 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Turnos SUMAQ</title>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Arial,sans-serif;background:#f4f6f9;color:#1a1a2e;padding:20px 14px 40px;}
+header{max-width:1100px;margin:0 auto 16px;display:flex;align-items:baseline;gap:10px;}
+header h1{font-size:17px;font-weight:600;}
+header span{font-size:12px;color:#6b7280;}
+.card{max-width:1100px;margin:0 auto 14px;background:#fff;border-radius:14px;border:1px solid #e5e7eb;padding:16px 18px;}
+.slabel{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.7px;color:#9ca3af;margin-bottom:12px;}
+
+.hrs-row{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;}
+.hc{background:#f8f9fb;border-radius:10px;padding:9px 12px;display:flex;align-items:center;gap:9px;border:1px solid #e5e7eb;}
+.hav{width:30px;height:30px;border-radius:7px;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;flex-shrink:0;}
+.hn{font-size:11px;color:#6b7280;}
+.hv{font-size:19px;font-weight:600;}
+.hv.ok{color:#0F6E56;}.hv.warn{color:#993C1D;}
+.hs{font-size:10px;color:#9ca3af;}
+
+.at{width:100%;border-collapse:collapse;font-size:12px;}
+.at th{text-align:center;font-size:10px;font-weight:700;color:#9ca3af;padding:5px 3px;border-bottom:1px solid #e5e7eb;text-transform:uppercase;letter-spacing:.4px;}
+.at th:first-child{text-align:left;padding-left:6px;}
+.at td{padding:4px 3px;border-bottom:1px solid #f3f4f6;text-align:center;}
+.at td:first-child{text-align:left;padding-left:6px;}
+.at tr:last-child td{border-bottom:none;}
+.plbl{display:flex;align-items:center;gap:6px;font-size:12px;font-weight:500;white-space:nowrap;}
+.pdot{width:10px;height:10px;border-radius:2px;flex-shrink:0;}
+.at select{font-size:11px;padding:3px 4px;border-radius:5px;border:1px solid #d1d5db;background:#fff;color:#1a1a2e;width:100%;cursor:pointer;}
+.at select:focus{outline:none;border-color:#534AB7;}
+
+.legend{display:flex;flex-wrap:wrap;gap:10px;margin-bottom:14px;}
+.leg{display:flex;align-items:center;gap:6px;font-size:13px;color:#374151;font-weight:500;}
+.lsw{width:28px;height:14px;border-radius:3px;}
+
+.tl-outer{overflow-x:auto;padding-bottom:4px;}
+/* Grid: col de horas + 7 días, cada día tiene 3 sub-columnas (una por persona) */
+.tl-main{display:grid;gap:0;min-width:760px;}
+.tl-head-row{display:grid;gap:2px;margin-bottom:2px;}
+.tl-day-head{text-align:center;font-size:13px;font-weight:700;padding:7px 0;border-radius:6px;}
+
+.tl-sub-heads{display:grid;gap:1px;margin-bottom:4px;}
+.tl-sub-head{text-align:center;font-size:9px;color:#9ca3af;padding:2px 0;}
+.tl-body{display:flex;gap:0;}
+.tl-hours{width:44px;flex-shrink:0;}
+.tl-hour{height:26px;font-size:10px;color:#9ca3af;text-align:right;padding-right:5px;display:flex;align-items:flex-start;justify-content:flex-end;padding-top:2px;}
+
+/* Track contenedor por día */
+.tl-day-group{display:grid;gap:2px;flex:1;}
+
+/* Track de una persona dentro de un día */
+.tl-track{position:relative;background:#f0f1f3;border-radius:5px;overflow:visible;}
+.tl-gridline{position:absolute;left:0;right:0;height:1px;background:#ddd;pointer-events:none;z-index:1;}
+.tl-gridline.bold{background:#bbb;}
+
+/* Barra draggable */
+.tl-bar{
+  position:absolute;left:1px;right:1px;
+  border-radius:4px;
+  cursor:grab;
+  display:flex;flex-direction:column;
+  align-items:center;justify-content:center;
+  gap:1px;
+  user-select:none;touch-action:none;
+  min-height:14px;
+  z-index:2;
+}
+.tl-bar:active{cursor:grabbing;filter:brightness(1.08);}
+.tl-bar-lbl{font-size:10px;font-weight:700;pointer-events:none;line-height:1;writing-mode:vertical-rl;text-orientation:mixed;transform:rotate(180deg);letter-spacing:1px;}
+.tl-bar-time{font-size:9px;font-weight:600;opacity:.95;pointer-events:none;}
+.tl-handle{position:absolute;left:50%;transform:translateX(-50%);width:16px;height:4px;border-radius:2px;background:rgba(255,255,255,0.55);cursor:ns-resize;z-index:3;}
+.tl-handle.top{top:2px;}.tl-handle.bot{bottom:2px;}
+
+.bar-demy  {background:#534AB7;color:#EEEDFE;}
+.bar-mari  {background:#0F6E56;color:#E1F5EE;}
+.bar-rolly-d{background:#D97706;color:#fff;}
+.bar-rolly-n{background:#7B2D8B;color:#F5E9FA;}
+.bar-libre {background:#e5e7eb;border:1px dashed #d1d5db;}
+
+.break-toggle{display:flex;align-items:center;justify-content:center;gap:4px;margin-bottom:3px;}
+.break-btn{
+  width:36px;height:18px;border-radius:99px;border:none;cursor:pointer;
+  position:relative;transition:background .2s;flex-shrink:0;
+  background:#e5e7eb;
+}
+.break-btn.on{background:#f59e0b;}
+.break-btn::after{
+  content:'';position:absolute;top:2px;left:2px;
+  width:14px;height:14px;border-radius:50%;background:#fff;
+  transition:transform .2s;box-shadow:0 1px 3px rgba(0,0,0,.2);
+}
+.break-btn.on::after{transform:translateX(18px);}
+.break-lbl{font-size:9px;color:#6b7280;white-space:nowrap;}
+
+.flt-btn{font-size:11px;padding:5px 12px;border-radius:20px;border:1.5px solid #d1d5db;background:#fff;cursor:pointer;font-weight:600;transition:all .15s;}
+.flt-btn.flt-on{color:#fff!important;}
+.nota{font-size:12px;color:#6b7280;padding:9px 12px;background:#f8f9fb;border-radius:8px;border-left:3px solid #d1d5db;margin-top:12px;}
+.nota.ok{border-left-color:#0F6E56;}.nota.warn{border-left-color:#993C1D;}
+.nota strong{color:#1a1a2e;}
+</style>
+</head>
+<body>
+
+<header>
+  <h1>Planificador de turnos</h1>
+  <span>SUMAQ Mercados · Lun–Dom · 6 am – 10 pm</span>
+</header>
+
+<div class="card">
+  <div class="slabel" style="display:flex;align-items:center;justify-content:space-between;">
+    <span>Horas semanales</span>
+    <button onclick="guardarHistorial()" style="font-size:11px;padding:4px 12px;border-radius:6px;border:none;background:#534AB7;color:#fff;cursor:pointer;font-weight:600;">💾 Guardar horario</button>
+  </div>
+  <div class="hrs-row" id="hrsRow"></div>
+</div>
+
+<div class="card" id="historialCard" style="display:none;">
+  <div class="slabel">Historial de horarios guardados</div>
+  <div id="historialList"></div>
+</div>
+
+<div class="card" style="padding:0;overflow:hidden;">
+  <div onclick="toggleTurnos()" style="padding:12px 18px;cursor:pointer;display:flex;align-items:center;justify-content:space-between;user-select:none;">
+    <span class="slabel" style="margin-bottom:0;">Turno por día</span>
+    <span id="turnosArrow" style="font-size:12px;color:#9ca3af;">▾</span>
+  </div>
+  <div id="turnosBody" style="padding:0 18px 14px;display:none;">
+    <table class="at"><thead><tr>
+      <th>Persona</th>
+      <th>Lun</th><th>Mar</th><th>Mié</th><th>Jue</th><th>Vie</th><th>Sáb</th><th>Dom</th>
+    </tr></thead>
+    <tbody id="assignBody"></tbody></table>
+  </div>
+</div>
+
+<div class="card" style="padding:14px 18px;">
+  <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;">
+    <div>
+      <div class="slabel" style="margin-bottom:8px;">Filtro por persona</div>
+      <div style="display:flex;gap:6px;flex-wrap:wrap;" id="filtroPersonas">
+        <button onclick="setFiltro('todos')" id="flt-todos" class="flt-btn flt-on" style="background:#374151;color:#fff;">Todos</button>
+        <button onclick="setFiltro('demy')"  id="flt-demy"  class="flt-btn" style="border-color:#534AB7;color:#534AB7;">Demy</button>
+        <button onclick="setFiltro('mari')"  id="flt-mari"  class="flt-btn" style="border-color:#0F6E56;color:#0F6E56;">Mari</button>
+        <button onclick="setFiltro('rolly')" id="flt-rolly" class="flt-btn" style="border-color:#D97706;color:#D97706;">Rolly</button>
+      </div>
+    </div>
+    <button onclick="generarResumen()" style="font-size:12px;padding:8px 14px;border-radius:8px;border:none;background:#25D366;color:#fff;cursor:pointer;font-weight:600;white-space:nowrap;">📋 Resumen WhatsApp</button>
+  </div>
+</div>
+
+<div class="card" id="resumenWACard" style="display:none;">
+  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
+    <div class="slabel" style="margin-bottom:0;">Resumen para WhatsApp</div>
+    <button onclick="copiarResumen()" style="font-size:11px;padding:4px 12px;border-radius:6px;border:none;background:#25D366;color:#fff;cursor:pointer;font-weight:600;">Copiar</button>
+  </div>
+  <pre id="resumenWATexto" style="font-size:12px;line-height:1.6;white-space:pre-wrap;background:#f0fdf4;padding:12px;border-radius:8px;color:#1a1a2e;font-family:inherit;"></pre>
+  <div id="copiadoMsg" style="display:none;font-size:11px;color:#0F6E56;margin-top:6px;font-weight:600;">✓ Copiado al portapapeles</div>
+</div>
+
+<div class="card">
+  <div class="slabel">Vista horaria — arrastra cada barra por día</div>
+  <div class="legend" id="legend"></div>
+  <div class="tl-outer" id="tlOuter"></div>
+  <div class="nota" id="nota"></div>
+</div>
+
+<script>
+const DAYS=['Lun','Mar','Mié','Jue','Vie','Sáb','Dom'];
+const NDAYS=7;
+const WEEKEND=[5,6];
+const DAY_COLORS=['#EEF2FF','#F0FDF4','#FFFBEB','#FDF2F8','#EFF6FF','#FEF3C7','#FFF1F2'];
+const DAY_TEXT=['#3730A3','#166534','#92400E','#86198F','#1D4ED8','#92400E','#9F1239'];
+const DAY_TRACK_BG=['#F0F1FF','#F0FDF7','#FFFDF0','#FDF0FB','#EFF6FF','#FFFBEB','#FFF5F5'];
+const fmt=h=>{
+  const wh=Math.floor(h), mn=h%1===0.5?':30':'';
+  if(wh<12) return wh+mn+'am';
+  if(wh===12) return '12'+mn+'pm';
+  return (wh-12)+mn+'pm';
+};
+const MIN_H=6,MAX_H=22,TOTAL_H=MAX_H-MIN_H;
+const TRACK_H=TOTAL_H*26;
+const PPH=26; // 26px por hora, 13px por media hora
+const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
+const h2px=h=>(h-MIN_H)*PPH;
+
+const PEOPLE=[
+  {key:'demy', name:'Demy', short:'De', lunch:false, defDia:{in:6,out:14}, defNoche:{in:14,out:21}},
+  {key:'mari', name:'Mari', short:'Ma', lunch:true,  defDia:{in:11,out:19},defNoche:{in:13,out:21}},
+  {key:'rolly',name:'Rolly',short:'Ro', lunch:false, defDia:{in:6,out:14}, defNoche:{in:14,out:21}}
+];
+
+const BAR={
+  demy:   {cls:'bar-demy',   hex:'#534AB7'},
+  mari:   {cls:'bar-mari',   hex:'#0F6E56'},
+  rolly_d:{cls:'bar-rolly-d',hex:'#D97706'},
+  rolly_n:{cls:'bar-rolly-d',hex:'#D97706'}
+};
+
+// schedule[day][pkey] = {tipo, in, out}
+// Horarios según imagen:
+// Demy:  6am-2pm todos los días, libre jueves
+// Mari:  1pm-9pm todos los días, libre domingo
+// Rolly: 9am-6pm lun/mar/sab, 1pm-9pm mié (noche ext), libre vie/dom
+const schedule=Array.from({length:NDAYS},(_,d)=>{
+  // d: 0=Lun,1=Mar,2=Mié,3=Jue,4=Vie,5=Sáb,6=Dom
+  return {
+    demy:  d===3?{tipo:'libre',in:6,out:14}:{tipo:'dia',in:6,out:14},
+    mari:  d===6?{tipo:'libre',in:13,out:21}:{tipo:'noche',in:13,out:21},
+    rolly: d===2?{tipo:'noche',in:14,out:21}:
+           d===4?{tipo:'libre',in:9,out:18}:
+           d===6?{tipo:'libre',in:9,out:18}:
+           {tipo:'dia',in:9,out:18}
+  };
+});
+
+// breaks[day][pkey] = true/false
+const breaks=Array.from({length:NDAYS},()=>({
+  demy:false, mari:true, rolly:false
+}));
+
+function bKey(pkey,tipo){
+  if(pkey==='rolly') return tipo==='noche'?'rolly_n':'rolly_d';
+  return pkey;
+}
+
+function toggleTurnos(){
+  const body=document.getElementById('turnosBody');
+  const arrow=document.getElementById('turnosArrow');
+  const open=body.style.display==='none';
+  body.style.display=open?'block':'none';
+  arrow.textContent=open?'▴':'▾';
+}
+
+function guardarHistorial(){
+  const snap={
+    ts: new Date().toLocaleString('es-PE',{dateStyle:'short',timeStyle:'short'}),
+    schedule: JSON.parse(JSON.stringify(schedule)),
+    breaks:   JSON.parse(JSON.stringify(breaks)),
+    hrs: PEOPLE.map(p=>({name:p.name,h:calcHrs(p)}))
+  };
+  historial.push(snap);
+  renderHistorial();
+  document.getElementById('historialCard').style.display='';
+}
+
+function renderHistorial(){
+  const el=document.getElementById('historialList');
+  const COL={demy:'#534AB7',mari:'#0F6E56',rolly:'#D97706'};
+  el.innerHTML='';
+  historial.slice().reverse().forEach((s,ri)=>{
+    const i=historial.length-1-ri;
+    const row=document.createElement('div');
+    row.style.cssText='display:flex;align-items:center;justify-content:space-between;padding:8px 10px;border-radius:8px;background:#f8f9fb;border:1px solid #e5e7eb;margin-bottom:6px;gap:10px;flex-wrap:wrap;';
+    const left=document.createElement('div');
+    left.style.cssText='display:flex;align-items:center;gap:12px;flex-wrap:wrap;';
+    const ts=document.createElement('span');
+    ts.style.cssText='font-size:11px;color:#6b7280;white-space:nowrap;';
+    ts.textContent='📅 '+s.ts;
+    left.appendChild(ts);
+    s.hrs.forEach(h=>{
+      const badge=document.createElement('span');
+      badge.style.cssText=`font-size:11px;font-weight:600;padding:2px 8px;border-radius:20px;background:${COL[h.name.toLowerCase()]||'#888'}22;color:${COL[h.name.toLowerCase()]||'#888'};`;
+      badge.textContent=h.name+' '+h.h+'h';
+      left.appendChild(badge);
+    });
+    const btns=document.createElement('div');
+    btns.style.cssText='display:flex;gap:6px;';
+    const btnLoad=document.createElement('button');
+    btnLoad.textContent='Cargar';
+    btnLoad.style.cssText='font-size:11px;padding:3px 10px;border-radius:5px;border:1px solid #d1d5db;background:#fff;cursor:pointer;';
+    btnLoad.onclick=()=>{
+      Object.assign(schedule,...s.schedule.map((d,i)=>({[i]:d})));
+      s.schedule.forEach((d,i)=>{ Object.keys(d).forEach(k=>{ schedule[i][k]=d[k]; }); });
+      s.breaks.forEach((d,i)=>{ Object.keys(d).forEach(k=>{ breaks[i][k]=d[k]; }); });
+      buildAssignRows(); buildTimeline(); updateHrs(); updateNota();
+    };
+    const btnDel=document.createElement('button');
+    btnDel.textContent='✕';
+    btnDel.style.cssText='font-size:11px;padding:3px 8px;border-radius:5px;border:1px solid #fca5a5;background:#fff;color:#dc2626;cursor:pointer;';
+    btnDel.onclick=()=>{ historial.splice(i,1); renderHistorial(); if(!historial.length) document.getElementById('historialCard').style.display='none'; };
+    btns.appendChild(btnLoad); btns.appendChild(btnDel);
+    row.appendChild(left); row.appendChild(btns);
+    el.appendChild(row);
+  });
+}
+
+const historial=[];
+let filtroActivo='todos';
+
+function setFiltro(p){
+  filtroActivo=p;
+  // Actualizar botones
+  ['todos','demy','mari','rolly'].forEach(k=>{
+    const btn=document.getElementById('flt-'+k);
+    const colMap={todos:'#374151',demy:'#534AB7',mari:'#0F6E56',rolly:'#D97706'};
+    btn.classList.remove('flt-on');
+    btn.style.background='#fff';
+    btn.style.borderColor=colMap[k];
+    btn.style.color=colMap[k];
+  });
+  const colMap={todos:'#374151',demy:'#534AB7',mari:'#0F6E56',rolly:'#D97706'};
+  const btn=document.getElementById('flt-'+p);
+  btn.classList.add('flt-on');
+  btn.style.background=colMap[p];
+  btn.style.color='#fff';
+  // Mostrar/ocultar barras
+  PEOPLE.forEach(person=>{
+    const visible=(p==='todos'||p===person.key);
+    for(let d=0;d<NDAYS;d++){
+      const bar=document.querySelector(`.tl-bar[data-pkey="${person.key}"][data-day="${d}"]`);
+      if(bar) bar.style.opacity=visible?'1':'0.08';
+    }
+  });
+}
+
+function generarResumen(){
+  const dias=['Lun','Mar','Mié','Jue','Vie','Sáb','Dom'];
+  const emo={demy:'🟣',mari:'🟢',rolly:'🟠'};
+  let txt='';
+  const persona=filtroActivo==='todos'?null:filtroActivo;
+
+  // ── Bloque 1: Por persona ──
+  txt+='📋 *HORARIO SEMANAL — SUMAQ*
+';
+  txt+='━━━━━━━━━━━━━━━━━━━━
+';
+  const personas=persona?PEOPLE.filter(p=>p.key===persona):PEOPLE;
+  personas.forEach(p=>{
+    txt+=`
+${emo[p.key]} *${p.name.toUpperCase()}* (${calcHrs(p)}h/sem)
+`;
+    dias.forEach((d,i)=>{
+      const s=schedule[i][p.key];
+      const brk=breaks[i][p.key];
+      if(s.tipo==='libre'){
+        txt+=`  ${d}: 🔴 Libre
+`;
+      } else {
+        const brkTxt=brk?' (-1h almuerzo)':'';
+        txt+=`  ${d}: ${fmt(s.in)}–${fmt(s.out)}${brkTxt}
+`;
+      }
+    });
+  });
+
+  // ── Bloque 2: Vista general por día ──
+  if(!persona){
+    txt+='
+━━━━━━━━━━━━━━━━━━━━
+';
+    txt+='📆 *COBERTURA POR DÍA*
+';
+    dias.forEach((d,i)=>{
+      txt+=`
+*${d}*
+`;
+      PEOPLE.forEach(p=>{
+        const s=schedule[i][p.key];
+        if(s.tipo!=='libre'){
+          const brk=breaks[i][p.key];
+          txt+=`  ${emo[p.key]} ${p.name}: ${fmt(s.in)}–${fmt(s.out)}${brk?' (-1h)':''}
+`;
+        }
+      });
+    });
+  }
+
+  txt+='
+_Generado desde planificador SUMAQ_';
+  document.getElementById('resumenWATexto').textContent=txt;
+  document.getElementById('resumenWACard').style.display='';
+}
+
+function copiarResumen(){
+  const txt=document.getElementById('resumenWATexto').textContent;
+  navigator.clipboard.writeText(txt).then(()=>{
+    const msg=document.getElementById('copiadoMsg');
+    msg.style.display='block';
+    setTimeout(()=>msg.style.display='none',2000);
+  });
+}
+
+function buildLegend(){
+  const items=[
+    {hex:'#534AB7',label:'Demy'},
+    {hex:'#0F6E56',label:'Mari'},
+    {hex:'#D97706',label:'Rolly'}
+  ];
+  document.getElementById('legend').innerHTML=items.map(i=>
+    `<div class="leg"><div class="lsw" style="background:${i.hex}"></div>${i.label}</div>`
+  ).join('');
+}
+
+function makeTrack(pkey, dayIdx){
+  const p=PEOPLE.find(x=>x.key===pkey);
+  const s=schedule[dayIdx][pkey];
+
+  const track=document.createElement('div');
+  track.className='tl-track';
+  track.style.height=TRACK_H+'px';
+  track.style.width='100%';
+
+  // gridlines
+  for(let h=MIN_H;h<=MAX_H;h++){
+    const g=document.createElement('div');
+    g.className='tl-gridline'+(h%3===0?' bold':'');
+    g.style.top=h2px(h)+'px';
+    track.appendChild(g);
+  }
+
+  if(s.tipo==='libre'){
+    const lb=document.createElement('div');
+    lb.className='tl-bar bar-libre';
+    lb.style.top='0px';
+    lb.style.height=TRACK_H+'px';
+    lb.style.display='flex';
+    lb.style.alignItems='center';
+    lb.style.justifyContent='center';
+    lb.style.fontSize='9px';
+    lb.style.color='#9ca3af';
+    lb.textContent='libre';
+    track.appendChild(lb);
+    return track;
+  }
+
+  const bk=bKey(pkey,s.tipo);
+  const bc=BAR[bk];
+
+  const bar=document.createElement('div');
+  bar.className='tl-bar '+bc.cls;
+  bar.dataset.pkey=pkey;
+  bar.dataset.day=dayIdx;
+  bar.style.top=h2px(s.in)+'px';
+  bar.style.height=(h2px(s.out)-h2px(s.in))+'px';
+
+  const hT=document.createElement('div'); hT.className='tl-handle top';
+  const lbl=document.createElement('div'); lbl.className='tl-bar-lbl';
+  lbl.textContent=p.short+(s.tipo==='noche'?' ☾':'');
+  const tim=document.createElement('div'); tim.className='tl-bar-time';
+  const timId=`bt-${pkey}-${dayIdx}`;
+  tim.id=timId;
+  tim.textContent=fmt(s.in)+'–'+fmt(s.out);
+  const hB=document.createElement('div'); hB.className='tl-handle bot';
+
+  bar.appendChild(hT); bar.appendChild(lbl); bar.appendChild(tim); bar.appendChild(hB);
+  track.appendChild(bar);
+
+  // drag
+  let drag=false,dtype=null,sy=0,si=0,so=0;
+  function start(e,dt){
+    drag=true;dtype=dt;
+    sy=e.touches?e.touches[0].clientY:e.clientY;
+    si=s.in;so=s.out;
+    e.preventDefault();
+  }
+  hT.addEventListener('mousedown',e=>start(e,'top'));
+  hT.addEventListener('touchstart',e=>start(e,'top'),{passive:false});
+  hB.addEventListener('mousedown',e=>start(e,'bot'));
+  hB.addEventListener('touchstart',e=>start(e,'bot'),{passive:false});
+  bar.addEventListener('mousedown',e=>{if(e.target!==hT&&e.target!==hB)start(e,'move');});
+  bar.addEventListener('touchstart',e=>{if(e.target!==hT&&e.target!==hB)start(e,'move');},{passive:false});
+
+  function move(e){
+    if(!drag)return;
+    const cy=e.touches?e.touches[0].clientY:e.clientY;
+    const dh=Math.round((cy-sy)/PPH*2)/2;
+    if(dtype==='top')      s.in=clamp(si+dh,MIN_H,s.out-1);
+    else if(dtype==='bot') s.out=clamp(so+dh,s.in+1,MAX_H);
+    else{const sp=so-si;s.in=clamp(si+dh,MIN_H,MAX_H-sp);s.out=s.in+sp;}
+    bar.style.top=h2px(s.in)+'px';
+    bar.style.height=(h2px(s.out)-h2px(s.in))+'px';
+    const tel=document.getElementById(timId);
+    if(tel) tel.textContent=fmt(s.in)+'–'+fmt(s.out);
+
+    // Actualizar tipo (dia/noche) según posición y sincronizar selector
+    const nuevoTipo = s.in >= 13 ? 'noche' : 'dia';
+    if(nuevoTipo !== s.tipo){
+      s.tipo = nuevoTipo;
+      const selEl = document.querySelector(`#assignBody select[data-pkey="${pkey}"][data-day="${dayIdx}"]`);
+      if(selEl) selEl.value = nuevoTipo;
+      // Actualizar color sub-cabecera
+      const bk2 = bKey(pkey, nuevoTipo);
+      const col2 = BAR[bk2]?.hex || '#d1d5db';
+      const subLbl = document.getElementById(`sublbl-${pkey}-${dayIdx}`);
+      if(subLbl) subLbl.style.background = col2;
+      // Actualizar color de la barra misma
+      Object.keys(BAR).forEach(k => bar.classList.remove(BAR[k].cls));
+      bar.classList.add(BAR[bk2].cls);
+    }
+
+    updateHrs(); updateNota();
+  }
+  window.addEventListener('mousemove',move);
+  window.addEventListener('touchmove',move,{passive:false});
+  window.addEventListener('mouseup',()=>{drag=false;});
+  window.addEventListener('touchend',()=>{drag=false;});
+
+  return track;
+}
+
+function buildTimeline(){
+  const outer=document.getElementById('tlOuter');
+  outer.innerHTML='';
+
+  // Contenedor principal
+  const wrap=document.createElement('div');
+  wrap.style.cssText='display:flex;min-width:760px;';
+
+  // Columna de horas
+  const hCol=document.createElement('div');
+  hCol.className='tl-hours';
+  // cabecera vacía × 2 filas (día + sub)
+  const ph1=document.createElement('div'); ph1.style.height='30px'; hCol.appendChild(ph1);
+  const ph2=document.createElement('div'); ph2.style.height='20px'; hCol.appendChild(ph2);
+  for(let h=MIN_H;h<=MAX_H;h++){
+    const d=document.createElement('div');
+    d.className='tl-hour';
+    d.textContent=fmt(h);
+    d.style.height = h<MAX_H ? PPH+'px' : '14px';
+    hCol.appendChild(d);
+  }
+  wrap.appendChild(hCol);
+
+  // 7 columnas de días
+  const daysWrap=document.createElement('div');
+  daysWrap.style.cssText='display:grid;grid-template-columns:repeat(7,1fr);gap:4px;flex:1;';
+
+  for(let d=0;d<NDAYS;d++){
+    const dayCol=document.createElement('div');
+    dayCol.style.minWidth='0';
+    dayCol.style.overflow='hidden';
+    dayCol.style.borderTop=`3px solid ${DAY_TEXT[d]}`;
+    dayCol.style.borderRadius='6px';
+
+    // Cabecera del día
+    const dHead=document.createElement('div');
+    dHead.className='tl-day-head'; dHead.style.background=DAY_COLORS[d]; dHead.style.color=DAY_TEXT[d]; dHead.style.fontWeight='700';
+    dHead.style.marginBottom='3px';
+    dHead.style.cursor='pointer';
+    dHead.style.userSelect='none';
+    dHead.style.display='flex';
+    dHead.style.alignItems='center';
+    dHead.style.justifyContent='center';
+    dHead.style.gap='4px';
+    const arrow=document.createElement('span');
+    arrow.textContent='▾'; arrow.style.fontSize='10px';
+    arrow.id='arr-'+d;
+    dHead.appendChild(document.createTextNode(DAYS[d]));
+    dHead.appendChild(arrow);
+    let collapsed=false;
+    dHead.onclick=()=>{
+      collapsed=!collapsed;
+      barsRow.style.display=collapsed?'none':'grid';
+      subRow.style.display=collapsed?'none':'grid';
+      arrow.textContent=collapsed?'▸':'▾';
+      dayCol.style.minWidth=collapsed?'32px':'';
+    };
+    dayCol.appendChild(dHead);
+
+    // Sub-cabeceras D / M / R + toggle break
+    const subRow=document.createElement('div');
+    subRow.style.cssText='display:grid;grid-template-columns:repeat(3,1fr);gap:2px;margin-bottom:3px;';
+    PEOPLE.forEach(p=>{
+      const cell=document.createElement('div');
+      cell.style.cssText='display:flex;flex-direction:column;align-items:center;gap:2px;';
+
+      // Etiqueta con color
+      const sh=document.createElement('div');
+      const bk=bKey(p.key,schedule[d][p.key].tipo);
+      const col=schedule[d][p.key].tipo==='libre'?'#d1d5db':(BAR[bk]?.hex||'#d1d5db');
+      sh.id=`sublbl-${p.key}-${d}`;
+      sh.style.cssText=`text-align:center;font-size:11px;font-weight:700;color:#fff;background:${col};border-radius:3px;padding:3px 0;width:100%;`;
+      sh.textContent=p.short;
+      cell.appendChild(sh);
+
+      // (break toggle movido a tabla superior)
+      const dd2=d,pk2=p.key; // referencia para rebuild
+      subRow.appendChild(cell);
+    });
+    dayCol.appendChild(subRow);
+
+    // 3 barras lado a lado
+    const barsRow=document.createElement('div');
+    barsRow.style.cssText='display:grid;grid-template-columns:repeat(3,1fr);gap:2px;';
+    PEOPLE.forEach(p=>{
+      const track=makeTrack(p.key,d);
+      barsRow.appendChild(track);
+    });
+    dayCol.appendChild(barsRow);
+    daysWrap.appendChild(dayCol);
+  }
+
+  wrap.appendChild(daysWrap);
+  outer.appendChild(wrap);
+}
+
+function buildAssignRows(){
+  const tbody=document.getElementById('assignBody');
+  tbody.innerHTML='';
+  PEOPLE.forEach(p=>{
+    const bk=p.key==='rolly'?'rolly_d':p.key;
+    const hex=BAR[bk].hex;
+    const tr=document.createElement('tr');
+    const tdN=document.createElement('td');
+    tdN.innerHTML=`<div class="plbl"><div class="pdot" style="background:${hex}"></div>${p.name}</div>`;
+    tr.appendChild(tdN);
+    const opts=p.key==='rolly'
+      ?[['dia','Día'],['noche','Noche ext.'],['libre','Libre']]
+      :[['dia','Día'],['noche','Noche'],['libre','Libre']];
+    for(let d=0;d<NDAYS;d++){
+      const td=document.createElement('td');
+      const sel=document.createElement('select');
+      opts.forEach(([v,t])=>{
+        const o=document.createElement('option');
+        o.value=v;o.textContent=t;
+        if(v===schedule[d][p.key].tipo) o.selected=true;
+        sel.appendChild(o);
+      });
+      const dd=d,pk=p.key;
+      sel.dataset.pkey=pk;
+      sel.dataset.day=dd;
+      sel.onchange=()=>{
+        const tipo=sel.value;
+        schedule[dd][pk].tipo=tipo;
+        if(tipo==='dia')  {schedule[dd][pk].in=p.defDia.in; schedule[dd][pk].out=p.defDia.out;}
+        if(tipo==='noche'){schedule[dd][pk].in=p.defNoche.in;schedule[dd][pk].out=p.defNoche.out;}
+        buildTimeline(); updateHrs(); updateNota();
+      };
+      // Toggle break
+      const brkWrap=document.createElement('div');
+      brkWrap.style.cssText='display:flex;align-items:center;justify-content:center;gap:3px;margin-top:3px;';
+      const brkBtn=document.createElement('button');
+      brkBtn.className='break-btn'+(breaks[d][p.key]?' on':'');
+      brkBtn.id=`brk-${p.key}-${d}`;
+      brkBtn.title='Toggle 1h almuerzo';
+      const brkLbl=document.createElement('span');
+      brkLbl.style.cssText='font-size:9px;color:#9ca3af;';
+      brkLbl.textContent='1h';
+      brkBtn.onclick=()=>{
+        breaks[d][p.key]=!breaks[d][p.key];
+        brkBtn.className='break-btn'+(breaks[d][p.key]?' on':'');
+        updateHrs(); updateNota();
+      };
+      brkWrap.appendChild(brkBtn);
+      brkWrap.appendChild(brkLbl);
+      td.appendChild(sel);
+      td.appendChild(brkWrap);
+      tr.appendChild(td);
+    }
+    tbody.appendChild(tr);
+  });
+}
+
+function calcHrs(p){
+  return Array.from({length:NDAYS},(_,d)=>d).reduce((acc,d)=>{
+    const s=schedule[d][p.key];
+    if(s.tipo==='libre') return acc;
+    const brk=breaks[d][p.key]?1:0;
+    return acc+(s.out-s.in)-brk;
+  },0);
+}
+
+function updateHrs(){
+  const COL={demy:'#534AB7',mari:'#0F6E56',rolly:'#D97706'};
+  document.getElementById('hrsRow').innerHTML=PEOPLE.map(p=>{
+    const h=calcHrs(p);
+    return `<div class="hc">
+      <div class="hav" style="background:${COL[p.key]}22;color:${COL[p.key]}">${p.name.slice(0,2).toUpperCase()}</div>
+      <div>
+        <div class="hn">${p.name}${p.lunch?' · 1h almuerzo':''}</div>
+        <div class="hv ${h>48?'warn':'ok'}">${h}h</div>
+        <div class="hs">/ 48h semanales</div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function updateNota(){
+  const ATENCION_H=21; // atención hasta las 9pm
+  const huecos=[];
+  for(let d=0;d<NDAYS;d++){
+    for(let h=MIN_H;h<ATENCION_H;h++){
+      const ok=PEOPLE.some(p=>{
+        const s=schedule[d][p.key];
+        return s.tipo!=='libre'&&h>=s.in&&h<s.out;
+      });
+      if(!ok) huecos.push(DAYS[d]+' '+fmt(h));
+    }
+  }
+  const nota=document.getElementById('nota');
+  nota.className='nota '+(huecos.length?'warn':'ok');
+  nota.innerHTML=huecos.length
+    ?`<strong>Huecos:</strong> ${huecos.join(' · ')}`
+    :`<strong>Cobertura completa ✓</strong>`;
+}
+
+buildLegend();
+buildAssignRows();
+buildTimeline();
+updateHrs();
+updateNota();
+</script>
+</body>
+</html>
