@@ -1,58 +1,49 @@
-# Instrucciones para Codex
+# Reglas de trabajo del proyecto
 
-Este proyecto puede ser editado por Codex y Claude Code. Es un proyecto HTML publicado con GitHub Pages, por lo que no usa `clasp`.
+Este proyecto puede ser trabajado por Claude, Codex, Gemini y el usuario.
+La fuente común del código es este repositorio de GitHub.
 
-## Antes de empezar cualquier tarea
+## Antes de trabajar
 
-1. Leer este archivo.
-2. Leer `AI_NOTES.md`.
-3. Revisar el estado de cambios pendientes si Git esta disponible.
-4. No sobrescribir cambios existentes sin entender su origen.
+1. Hacer `git pull` antes de empezar.
+2. Leer este archivo y `AI_NOTES.md`.
+3. Revisar `git status` y no sobrescribir cambios que no se entiendan.
 
 ## Durante el trabajo
 
-1. Trabajar por turnos.
-2. No editar en paralelo los mismos archivos con dos asistentes distintos.
-3. Preferir cambios pequenos y revisables.
-4. Si hay dudas sobre cambios previos, revisar el diff antes de continuar.
+- Trabajar por turnos: solo un asistente edita el proyecto a la vez.
+- Claude y Codex trabajan sobre la copia local; Gemini trabaja mediante GitHub.
+- No editar en paralelo los mismos archivos.
+- Mantener los cambios pequeños y revisables.
+- El archivo principal es `index.html`, salvo indicación del usuario.
 
-## Despues de cada cambio importante
+## Al terminar una tarea
 
-Actualizar `AI_NOTES.md` agregando una nueva entrada arriba, sin borrar entradas anteriores.
+1. Probar lo que corresponda.
+2. Revisar `git diff`.
+3. Actualizar `AI_NOTES.md` sin borrar entradas anteriores.
+4. Crear un commit descriptivo.
+5. Hacer `commit` y `git push` solo con confirmación del usuario.
+6. Indicar cambios, validaciones y pendientes.
 
-Cada entrada debe incluir:
+## Cambio de asistente
 
-- Fecha.
-- Autor: Codex, Claude o Usuario.
-- Resumen del cambio.
-- Archivos modificados.
-- Comandos ejecutados.
-- Estado de publicacion: `git push` o pendiente.
-- Pendientes o riesgos.
+Antes de entregar el proyecto a otro asistente, dejar en `AI_NOTES.md`:
 
-## Reglas de seguridad
+- estado actual;
+- archivos modificados;
+- pruebas realizadas;
+- próximo paso;
+- pendientes o riesgos.
 
-Nunca guardar en `AI_NOTES.md`, `AGENTS.md`, `CLAUDE.md` ni commits:
+El siguiente asistente debe hacer `git pull` y leer `AI_NOTES.md` antes de continuar.
 
-- tokens
-- contrasenas
-- claves API
-- credenciales
-- datos sensibles de clientes
-- URLs privadas con credenciales
+## Seguridad
 
-`AI_NOTES.md` es memoria de trabajo, no fuente absoluta de verdad. La fuente final es el historial de Git, los archivos reales y las pruebas ejecutadas.
+Nunca guardar tokens, contraseñas, claves API, credenciales ni datos sensibles en
+este repositorio, `AI_NOTES.md` o commits.
 
-## Regla especial para GitHub Pages
+## Publicación
 
-Este proyecto se publica con GitHub Pages.
-
-Para publicar cambios, normalmente basta con:
-
-```bash
-git add .
-git commit -m "Describe el cambio"
-git push
-```
-
-Luego esperar 1 o 2 minutos y recargar la pagina publicada.
+Este proyecto no se considera publicado mediante GitHub Pages en este flujo.
+Hacer `git push` solo actualiza GitHub y no implica automáticamente un despliegue web.

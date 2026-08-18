@@ -2,6 +2,23 @@
 
 Memoria compartida entre Codex, Claude Code y el usuario.
 
+## 2026-08-18 — Codex — Configuración piloto para Claude, Codex y Gemini
+
+Se alinearon las instrucciones del proyecto para trabajar con una fuente común
+en GitHub. Claude y Codex trabajan sobre la copia local; Gemini trabaja mediante
+GitHub. Antes de iniciar se debe hacer `git pull`, leer `AGENTS.md` y esta memoria.
+Al cerrar una tarea se registran cambios, validaciones, pendientes y commit/push.
+
+Archivos modificados:
+- `AGENTS.md`
+- `CLAUDE.md`
+- `GEMINI.md`
+- `AI_NOTES.md`
+
+Validación: configuración revisada; queda pendiente probar el flujo con una tarea simulada.
+Estado de publicación: pendiente de commit/push.
+Pendientes o riesgos: confirmar cómo se visualiza la aplicación después de hacer push.
+
 Las entradas nuevas deben agregarse arriba.
 
 Este archivo debe actualizarse despues de cada cambio importante, publicacion o decision tecnica relevante.
