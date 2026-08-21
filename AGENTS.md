@@ -1,6 +1,6 @@
-# Instrucciones para Codex
+# Instrucciones para Asistentes IA (Codex, Claude Code y Google AI Studio)
 
-Este proyecto puede ser editado por Codex y Claude Code. Es un proyecto HTML publicado con GitHub Pages, por lo que no usa `clasp`.
+Este proyecto puede ser editado por Codex, Claude Code y Google AI Studio. Es un proyecto HTML publicado con GitHub Pages, por lo que no usa `clasp`.
 
 ## Antes de empezar cualquier tarea
 
@@ -23,7 +23,7 @@ Actualizar `AI_NOTES.md` agregando una nueva entrada arriba, sin borrar entradas
 Cada entrada debe incluir:
 
 - Fecha.
-- Autor: Codex, Claude o Usuario.
+- Autor: Codex, Claude, AI Studio o Usuario.
 - Resumen del cambio.
 - Archivos modificados.
 - Comandos ejecutados.

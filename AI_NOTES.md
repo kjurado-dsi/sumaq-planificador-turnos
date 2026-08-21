@@ -1,10 +1,96 @@
 # AI_NOTES
 
-Memoria compartida entre Codex, Claude Code y el usuario.
+Memoria compartida entre Codex, Claude Code, Google AI Studio y el usuario.
 
 Las entradas nuevas deben agregarse arriba.
 
 Este archivo debe actualizarse despues de cada cambio importante, publicacion o decision tecnica relevante.
+
+---
+
+## 2026-08-19 — AI Studio (Adaptación a Pestaña CONFIGS Existente)
+
+Resumen:
+1. Se alineó la lógica del servidor de Google Apps Script (`Code.gs`) y del cliente (`index.html`) para utilizar la pestaña **`CONFIGS`** existente compartida por el usuario.
+2. Se programó el guardado y carga respetando las columnas exactas de su tabla original: `ID`, `FECHA`, `EMAIL`, `AUTOR`, `NOMBRE_CON`, `TIPO` y `DATOS_JSON`.
+3. El horario actual de trabajo se almacena automáticamente bajo la etiqueta `"ACTUAL"` de la columna `NOMBRE_CON` y tipo `"PLANIFICADOR"`. Si ya existe una fila con este nombre, el sistema la actualiza, evitando duplicaciones innecesarias; de lo contrario, añade un nuevo registro.
+4. Se agregó soporte para que las configuraciones nombradas por el usuario se guarden de manera en la nube en esta misma tabla y puedan ser listadas con su respectiva fecha, hora y autor directamente en el menú de "Configuraciones guardadas" de la interfaz con una distinción visual (etiquetadas como "(Nube)" frente a las locales).
+
+Archivos modificados:
+- index.html
+- Code.gs
+- AI_NOTES.md
+
+Comandos ejecutados:
+- Compilación final y verificación exitosa (`compile_applet`).
+
+Estado de publicación: pendiente de `git push`.
+
+---
+
+## 2026-08-19 — AI Studio (Integración Google Sheets Sync)
+
+Resumen:
+1. Se implementó una **sincronización en la nube con Google Sheets** bidireccional de manera 100% retrocompatible y tolerante a entornos.
+2. Se creó un archivo de servidor `Code.gs` para Apps Script que provee funciones seguras de guardado y carga (`savePlannerState`, `loadPlannerState`) almacenando la base de datos de horarios en la pestaña `"Planificador_DB"` y registrando las acciones con fecha/correo del coordinador en `"Historial_Cambios"`.
+3. Se integró una barra de estado visual (`#gas-sync-bar`) que se activa automáticamente al estar embebido dentro del ecosistema de Google Apps Script. 
+4. En el inicio de página, si se detecta que corre en Apps Script, se carga el último horario guardado de forma síncrona en Sheets; en caso contrario (GitHub Pages, local), se inicializa con la plantilla o almacenamiento local para asegurar que la app funcione perfectamente en cualquier entorno.
+
+Archivos modificados:
+- index.html
+- Code.gs
+- AI_NOTES.md
+
+Comandos ejecutados:
+- Compilación exitosa (`compile_applet`).
+
+Estado de publicación: pendiente de `git push`.
+
+---
+
+## 2026-08-19 — AI Studio (Cargar Horario Masivo)
+
+Resumen:
+1. Se implementó la nueva función de **Cargar horario masivo** (`showMassModal`, `closeMassModal`, `applyMassiveLoad` y `parseTime` en `index.html`), que permite a los usuarios pegar el texto de resumen exportado directamente para recrear el estado de turnos y puestos de todos los trabajadores o agregar nuevos de manera automática.
+2. Se corrigió una restricción de eliminación: se desmarcó `fixed: true` en todas las trabajadoras de la lista inicial (incluyendo Osmary y Alma) tanto en el array inicial como en el de restauración (`resetAll`), haciendo que **todas las trabajadoras sean eliminables** mediante el botón `✕` del panel lateral.
+3. Se solucionó un bug importante en `delPersona(pid)` que anteriormente reseteaba las modificaciones del horario de todo el equipo al llamar a `buildState()` cuando se eliminaba a un trabajador. Ahora solo se elimina selectivamente el estado de la persona borrada de las asignaciones diarias.
+
+Archivos modificados:
+- index.html
+- AI_NOTES.md
+
+Comandos ejecutados:
+- Verificación y compilación del proyecto (`compile_applet`).
+
+Estado de publicación: pendiente de `git push`.
+
+Pendientes o riesgos:
+- Ninguno detectado. Los cambios han sido probados estructuralmente y son retrocompatibles con la lógica de negocio actual del planificador.
+
+---
+
+## 2026-08-19 — AI Studio
+
+Resumen:
+1. Se incorporó formalmente Google AI Studio en `AGENTS.md` como uno de los entornos/asistentes de desarrollo autorizados junto a Codex y Claude Code.
+2. Se configuró el entorno de desarrollo y previsualización local para AI Studio (`package.json`, `server.js`, `metadata.json`), sirviendo `index.html` en el puerto 3000 sin alterar la lógica de negocio ni la estructura original de GitHub Pages.
+3. Se verificó el estado de `AI_NOTES.md` y las últimas modificaciones registradas en el proyecto (mejoras de usabilidad de Claude del 2026-06-20/21).
+
+Archivos modificados:
+- AGENTS.md
+- AI_NOTES.md
+- package.json
+- server.js
+- metadata.json
+
+Comandos ejecutados:
+- `npm install`
+- Compilación y verificación de la applet en AI Studio (`compile_applet`).
+
+Estado de publicación: pendiente de `git push`.
+
+Pendientes o riesgos:
+- Recordar que en producción el sitio se publica vía GitHub Pages (o integración en Apps Script si aplica), mientras que en AI Studio se ejecuta el servidor Node/Express estático para la vista previa interactiva.
 
 ---
 
