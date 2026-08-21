@@ -11,10 +11,6 @@ if not exist ".deployment-id" (
 
 set /p DEPLOYMENT_ID=<.deployment-id
 
-echo Verificando cuenta autenticada...
-call npx clasp login --status
-
-echo.
 echo Subiendo codigo (clasp push)...
 call npx clasp push --force
 if errorlevel 1 goto :error

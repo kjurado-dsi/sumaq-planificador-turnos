@@ -16,10 +16,6 @@ fi
 
 DEPLOYMENT_ID=$(cat "$ID_FILE" | tr -d '[:space:]')
 
-echo "Verificando cuenta autenticada..."
-npx clasp login --status || true
-
-echo ""
 echo "Subiendo codigo (clasp push)..."
 npx clasp push --force
 
