@@ -236,6 +236,14 @@ pre#exp{display:none;margin-top:10px;font-size:10px;background:#f1efe8;padding:1
 </style>
 </head>
 <body>
+<div id="gas-sync-bar" style="display:none;background:#FFF2CC;border:1px solid #F0C78A;border-radius:6px;padding:8px 12px;margin-bottom:12px;font-size:12px;display:flex;align-items:center;justify-content:space-between">
+  <div style="display:flex;align-items:center;gap:6px">
+    <span id="gas-sync-status-icon">🔄</span>
+    <span id="gas-sync-text">Conectado a Google Sheets</span>
+  </div>
+  <button onclick="syncToGoogleSheets()" style="font-size:11px;padding:4px 10px;background:#0f6e56;color:#fff;border:none;border-radius:4px;cursor:pointer">💾 Guardar Horario Actual en Sheets</button>
+</div>
+
 <h1>SUMAQ Mercados — Planificador de Turnos v9</h1>
 <p class="sub">Corredor · Pasillos · Snap 30 min · ★ mayor volumen · <b>↕ Arrastra arriba/abajo = cambiar puesto · ↔ Extremos = ajustar horario</b></p>
 
@@ -256,6 +264,7 @@ pre#exp{display:none;margin-top:10px;font-size:10px;background:#f1efe8;padding:1
   <div class="btns">
     <button style="font-size:11px;padding:6px 14px;border:0.5px solid #0f6e56;border-radius:6px;background:#fff;color:#0f6e56;cursor:pointer" onclick="showRSM()">📅 Ver semana completa</button>
     <button class="add-p-btn" onclick="showModal()">+ Nueva persona</button>
+    <button class="add-p-btn" style="border-color:#534AB7;color:#534AB7" onclick="showMassModal()">📥 Cargar horario masivo</button>
     <button class="rst" onclick="resetAll()">↺ Restaurar</button>
     <select id="exp-person" style="font-size:11px;border:0.5px solid #b4b2a9;border-radius:6px;padding:6px 8px;background:#fff;cursor:pointer"></select>
     <button class="exp-btn" onclick="exportar()">Ver resumen ↓</button>
@@ -347,6 +356,22 @@ pre#exp{display:none;margin-top:10px;font-size:10px;background:#f1efe8;padding:1
   </div>
 </div>
 
+<div id="mass-modal" style="display:none" class="modal-ov" onclick="if(event.target===this)closeMassModal()">
+  <div class="modal-box" style="width: 500px; max-width: 90%;">
+    <div class="modal-title">Cargar horario masivo</div>
+    <div style="font-size:11px;color:#666;margin-bottom:10px;line-height:1.4">
+      Pega aquí el texto del resumen de horarios. Se identificarán las personas por su nombre y se actualizarán sus turnos. Las personas que no existan serán agregadas automáticamente.
+    </div>
+    <div class="mfield">
+      <textarea id="mass-text" placeholder="Pega el horario aquí..." style="width:100%;height:250px;font-family:monospace;font-size:11px;border:0.5px solid #b4b2a9;border-radius:5px;padding:8px;background:#f5f5f2;resize:vertical"></textarea>
+    </div>
+    <div class="mbtns">
+      <button class="mcancel" onclick="closeMassModal()">Cancelar</button>
+      <button class="msave" style="background:#534AB7;border-color:#534AB7" onclick="applyMassiveLoad()">Cargar Horarios</button>
+    </div>
+  </div>
+</div>
+
 <script>
 const SH=6,EH=21,SPAN=EH-SH,MAX_H=48,CUT=14;
 const DIAS=['Lunes','Martes','Miércoles','Jueves','Viernes','Sábado','Domingo'];
@@ -400,8 +425,8 @@ let PERSONAS=[
   {id:'mariag',  name:'Maria Guerra',       color:'#1D9E75',fixed:false,pivot:false},
   {id:'yajaira', name:'Yajaira Brisna',     color:'#EF9F27',fixed:false,pivot:false},
   {id:'dalet',   name:'Dalet Lugo',         color:'#EF9F27',fixed:false,pivot:false},
-  {id:'osmary',  name:'Osmary Rodriguez',   color:'#85B7EB',fixed:true, pivot:false},
-  {id:'alma',    name:'Alma Paloma',        color:'#534AB7',fixed:true, pivot:false},
+  {id:'osmary',  name:'Osmary Rodriguez',   color:'#85B7EB',fixed:false,pivot:false},
+  {id:'alma',    name:'Alma Paloma',        color:'#534AB7',fixed:false,pivot:false},
 ];
 
 // HORARIO COMPLETO — VERSION ACTUALIZADA
@@ -697,7 +722,12 @@ function delPersona(pid){
   if(!confirm('¿Eliminar a esta persona del planificador?'))return;
   PERSONAS=PERSONAS.filter(p=>p.id!==pid);
   delete SCHEDULE[pid];delete CUSTOM_SCHEDULE[pid];
-  buildState();renderAll();
+  for(let d=0;d<7;d++){
+    if(state[d] && state[d][pid] !== undefined){
+      delete state[d][pid];
+    }
+  }
+  renderAll();
 }
 
 /* ─── GANTT ─── */
@@ -893,6 +923,8 @@ function exportar(){
 
 /* ─── SAVES ─── */
 const SAVE_KEY='sumaq_turnos_v9';
+let GAS_SAVES = [];
+
 function saveConfig(){
   const name=document.getElementById('save-name').value.trim();
   if(!name){alert('Escribe un nombre primero.');return;}
@@ -909,6 +941,24 @@ function saveConfig(){
   const btn=document.querySelector('[onclick="saveConfig()"]');
   btn.textContent='✅ Guardado';btn.style.background='#1D9E75';
   setTimeout(()=>{btn.textContent='💾 Guardar';btn.style.background='#534AB7';},1500);
+
+  // Guardar en la nube (Google Sheets) si está habilitado
+  if (typeof google !== 'undefined' && google.script && google.script.run) {
+    showSyncStatus('Guardando "' + name + '" en Google Sheets...', 'loading');
+    google.script.run
+      .withSuccessHandler(function(res) {
+        if (res && res.success) {
+          showSyncStatus('¡Configuración "' + name + '" guardada en la hoja!', 'success');
+          refreshGasSaves();
+        } else {
+          showSyncStatus('Error al guardar en Sheets: ' + (res ? res.error : 'desconocido'), 'error');
+        }
+      })
+      .withFailureHandler(function(err) {
+        showSyncStatus('Error: ' + err, 'error');
+      })
+      .savePlannerState(JSON.stringify(state), JSON.stringify(PERSONAS), name, 'PLANIFICADOR');
+  }
 }
 function loadConfig(idx){
   const saves=JSON.parse(localStorage.getItem(SAVE_KEY)||'[]');
@@ -916,6 +966,39 @@ function loadConfig(idx){
   if(!confirm('¿Cargar "'+cfg.name+'"? Los cambios sin guardar se perderán.'))return;
   PERSONAS=cfg.personas;state=cfg.state;
   renderAll();
+}
+function loadGasConfig(name) {
+  if (typeof google !== 'undefined' && google.script && google.script.run) {
+    showSyncStatus('Cargando "' + name + '" desde Google Sheets...', 'loading');
+    google.script.run
+      .withSuccessHandler(function(res) {
+        if (res && res.state && res.personas) {
+          PERSONAS = res.personas;
+          state = res.state;
+          renderTicks();
+          renderAll();
+          showSyncStatus('Configuración "' + name + '" cargada con éxito', 'success');
+        } else {
+          showSyncStatus('Error al cargar la configuración de Sheets.', 'error');
+        }
+      })
+      .withFailureHandler(function(err) {
+        showSyncStatus('Error: ' + err, 'error');
+      })
+      .loadPlannerState(name, 'PLANIFICADOR');
+  }
+}
+function refreshGasSaves() {
+  if (typeof google !== 'undefined' && google.script && google.script.run) {
+    google.script.run
+      .withSuccessHandler(function(list) {
+        if (list) {
+          GAS_SAVES = list;
+          renderSaves();
+        }
+      })
+      .getSavesList();
+  }
 }
 function deleteConfig(idx){
   const saves=JSON.parse(localStorage.getItem(SAVE_KEY)||'[]');
@@ -926,16 +1009,39 @@ function deleteConfig(idx){
 }
 function renderSaves(){
   const el=document.getElementById('saves-list');
-  const saves=JSON.parse(localStorage.getItem(SAVE_KEY)||'[]');
-  if(!saves.length){el.innerHTML='<div style="font-size:10px;color:#aaa;font-style:italic">No hay configuraciones guardadas.</div>';return;}
-  el.innerHTML=saves.map((s,i)=>
-    '<div class="save-row">'+
-    '<div class="save-row-name">'+s.name+'</div>'+
-    '<div class="save-row-date">'+s.date+'</div>'+
-    '<button class="btn-load" onclick="loadConfig('+i+')">Cargar</button>'+
-    '<button class="btn-del" onclick="deleteConfig('+i+')">✕</button>'+
-    '</div>'
-  ).join('');
+  const localSaves=JSON.parse(localStorage.getItem(SAVE_KEY)||'[]');
+  
+  let html = '';
+  
+  if (typeof google !== 'undefined' && google.script && google.script.run) {
+    // Si tenemos guardados en Google Sheets
+    if (GAS_SAVES.length > 0) {
+      html += GAS_SAVES.map((s) =>
+        '<div class="save-row" style="background:#f0faf6;border-left:3px solid #1D9E75;margin-bottom:4px">' +
+        '<div class="save-row-name" style="font-weight:700">' + s.name + ' <span style="font-size:8px;color:#1D9E75;font-weight:normal">(Nube)</span></div>' +
+        '<div class="save-row-date" style="font-size:9px;color:#666">' + s.date + ' • por ' + s.author + '</div>' +
+        '<button class="btn-load" style="background:#1D9E75" onclick="loadGasConfig(\'' + s.name + '\')">Cargar</button>' +
+        '</div>'
+      ).join('');
+    }
+  }
+  
+  if (localSaves.length > 0) {
+    html += localSaves.map((s,i)=>
+      '<div class="save-row">'+
+      '<div class="save-row-name">'+s.name+' <span style="font-size:8px;color:#aaa">(Local)</span></div>'+
+      '<div class="save-row-date">'+s.date+'</div>'+
+      '<button class="btn-load" onclick="loadConfig('+i+')">Cargar</button>'+
+      '<button class="btn-del" onclick="deleteConfig('+i+')">✕</button>'+
+      '</div>'
+    ).join('');
+  }
+  
+  if (!html) {
+    el.innerHTML='<div style="font-size:10px;color:#aaa;font-style:italic">No hay configuraciones guardadas.</div>';
+  } else {
+    el.innerHTML = html;
+  }
 }
 
 /* ─── MODAL ─── */
@@ -961,6 +1067,132 @@ function savePersona(){
   closeModal();renderAll();
 }
 
+function showMassModal(){
+  document.getElementById('mass-text').value='';
+  document.getElementById('mass-modal').style.display='flex';
+  document.getElementById('mass-text').focus();
+}
+function closeMassModal(){
+  document.getElementById('mass-modal').style.display='none';
+}
+
+function parseTime(str) {
+  const m = str.trim().toLowerCase().match(/^(\d+)(?::(\d+))?\s*(am|pm)$/);
+  if (!m) return null;
+  let hr = parseInt(m[1], 10);
+  const min = m[2] ? parseInt(m[2], 10) : 0;
+  const ampm = m[3];
+  if (ampm === 'pm' && hr < 12) {
+    hr += 12;
+  } else if (ampm === 'am' && hr === 12) {
+    hr = 0;
+  }
+  return hr + min / 60;
+}
+
+function applyMassiveLoad(){
+  const text = document.getElementById('mass-text').value;
+  if (!text || !text.trim()) {
+    alert('Por favor pega el horario primero.');
+    return;
+  }
+  const lines = text.split('\n');
+  const parsedPeople = [];
+  let currentPerson = null;
+  
+  for (let line of lines) {
+    line = line.trim();
+    if (!line) continue;
+    
+    if (line.startsWith('▸') || line.startsWith('•') || line.startsWith('-')) {
+      let namePart = line.substring(1).trim();
+      namePart = namePart.replace(/\[[^\]]+\]/g, '').replace(/\([^)]+\)/g, '').trim();
+      
+      if (namePart) {
+        currentPerson = {
+          name: namePart,
+          schedule: { 0: null, 1: null, 2: null, 3: null, 4: null, 5: null, 6: null }
+        };
+        parsedPeople.push(currentPerson);
+      }
+      continue;
+    }
+    
+    if (currentPerson) {
+      const colonIdx = line.indexOf(':');
+      if (colonIdx > 0) {
+        const dayStr = line.substring(0, colonIdx).trim().toLowerCase();
+        const contentStr = line.substring(colonIdx + 1).trim();
+        
+        let dayIdx = -1;
+        if (dayStr.startsWith('lun') || dayStr.startsWith('lu')) dayIdx = 0;
+        else if (dayStr.startsWith('mar') || dayStr.startsWith('ma')) dayIdx = 1;
+        else if (dayStr.startsWith('mié') || dayStr.startsWith('mie') || dayStr.startsWith('mi')) dayIdx = 2;
+        else if (dayStr.startsWith('jue') || dayStr.startsWith('ju')) dayIdx = 3;
+        else if (dayStr.startsWith('vie') || dayStr.startsWith('vi')) dayIdx = 4;
+        else if (dayStr.startsWith('sáb') || dayStr.startsWith('sab') || dayStr.startsWith('sá') || dayStr.startsWith('sa')) dayIdx = 5;
+        else if (dayStr.startsWith('dom') || dayStr.startsWith('do')) dayIdx = 6;
+        
+        if (dayIdx >= 0) {
+          if (contentStr.toUpperCase() === 'DESCANSO' || contentStr.toUpperCase().includes('DESCANSO')) {
+            currentPerson.schedule[dayIdx] = null;
+          } else {
+            const slotsStr = contentStr.split('+');
+            const parsedSlots = [];
+            
+            for (let slotStr of slotsStr) {
+              slotStr = slotStr.trim();
+              if (!slotStr) continue;
+              
+              const m = slotStr.match(/([a-zA-ZáéíóúÁÉÍÓÚñÑüÜ.\s\-/]+)\s+(\d+(?::\d+)?(?:am|pm))\s*[–-]\s*(\d+(?::\d+)?(?:am|pm))/i);
+              if (m) {
+                let puesto = m[1].trim().toLowerCase();
+                if (!PUESTO_OPTS.some(o => o.id === puesto)) {
+                  puesto = 'relevo';
+                }
+                const s = parseTime(m[2]);
+                const e = parseTime(m[3]);
+                if (s !== null && e !== null) {
+                  parsedSlots.push({ puesto, s, e });
+                }
+              }
+            }
+            currentPerson.schedule[dayIdx] = parsedSlots.length > 0 ? parsedSlots : null;
+          }
+        }
+      }
+    }
+  }
+  
+  if (parsedPeople.length === 0) {
+    alert('No se pudo encontrar ninguna persona en el texto pegado. Asegúrate de usar el formato correcto.');
+    return;
+  }
+  
+  if (!confirm('¿Cargar el horario de ' + parsedPeople.length + ' personas parsedas? Esto actualizará los horarios actuales.')) {
+    return;
+  }
+  
+  parsedPeople.forEach(parsed => {
+    let existing = PERSONAS.find(p => p.name.trim().toLowerCase() === parsed.name.trim().toLowerCase());
+    if (!existing) {
+      const id = 'p' + Date.now() + Math.floor(Math.random() * 1000);
+      const color = PCOLORS[PERSONAS.filter(p => !p.fixed).length % PCOLORS.length];
+      existing = { id, name: parsed.name, color, fixed: false, pivot: false };
+      PERSONAS.push(existing);
+    }
+    
+    for (let d = 0; d < 7; d++) {
+      if (!state[d]) state[d] = {};
+      state[d][existing.id] = parsed.schedule[d] ? cloneA(parsed.schedule[d]) : null;
+    }
+  });
+  
+  closeMassModal();
+  renderAll();
+  alert('Se cargaron los horarios de ' + parsedPeople.length + ' personas con éxito.');
+}
+
 /* ─── RESET ─── */
 function resetAll(){
   if(!confirm('¿Restaurar el horario base (PRIMERA VERSION 19.06)?'))return;
@@ -978,8 +1210,8 @@ function resetAll(){
     {id:'mariag',  name:'Maria Guerra',       color:'#1D9E75',fixed:false,pivot:false},
     {id:'yajaira', name:'Yajaira Brisna',     color:'#EF9F27',fixed:false,pivot:false},
     {id:'dalet',   name:'Dalet Lugo',         color:'#EF9F27',fixed:false,pivot:false},
-    {id:'osmary',  name:'Osmary Rodriguez',   color:'#85B7EB',fixed:true, pivot:false},
-    {id:'alma',    name:'Alma Paloma',        color:'#534AB7',fixed:true, pivot:false},
+    {id:'osmary',  name:'Osmary Rodriguez',   color:'#85B7EB',fixed:false,pivot:false},
+    {id:'alma',    name:'Alma Paloma',        color:'#534AB7',fixed:false,pivot:false},
   ];
   CUSTOM_SCHEDULE={};
   buildState();renderAll();
@@ -1141,7 +1373,94 @@ function renderHoursCompare(){
   el.innerHTML=html;
 }
 
-buildState();renderTicks();renderAll();
+/* ─── GOOGLE SHEETS SYNC ─── */
+function showSyncStatus(text, type) {
+  const bar = document.getElementById('gas-sync-bar');
+  const icon = document.getElementById('gas-sync-status-icon');
+  const txt = document.getElementById('gas-sync-text');
+  
+  if (!bar) return;
+  bar.style.display = 'flex';
+  txt.textContent = text;
+  
+  if (type === 'loading') {
+    icon.textContent = '🔄';
+    bar.style.background = '#FFF2CC';
+    bar.style.borderColor = '#F0C78A';
+  } else if (type === 'success') {
+    icon.textContent = '✅';
+    bar.style.background = '#D4EDDA';
+    bar.style.borderColor = '#C3E6CB';
+    setTimeout(() => {
+      bar.style.background = '#E8F4F8';
+      bar.style.borderColor = '#BEE5EB';
+      txt.textContent = 'Conectado a Google Sheets';
+      icon.textContent = '🟢';
+    }, 3000);
+  } else if (type === 'error') {
+    icon.textContent = '❌';
+    bar.style.background = '#F8D7DA';
+    bar.style.borderColor = '#F5C6CB';
+  } else {
+    icon.textContent = '🟢';
+    bar.style.background = '#E8F4F8';
+    bar.style.borderColor = '#BEE5EB';
+  }
+}
+
+function syncToGoogleSheets() {
+  if (typeof google !== 'undefined' && google.script && google.script.run) {
+    showSyncStatus('Sincronizando y guardando en Google Sheets...', 'loading');
+    google.script.run
+      .withSuccessHandler(function(res) {
+        if (res && res.success) {
+          showSyncStatus('¡Horario guardado en la hoja de cálculo con éxito!', 'success');
+        } else {
+          showSyncStatus('Error al guardar: ' + (res ? res.error : 'error desconocido'), 'error');
+        }
+      })
+      .withFailureHandler(function(err) {
+        showSyncStatus('Fallo de conexión: ' + err, 'error');
+      })
+      .savePlannerState(JSON.stringify(state), JSON.stringify(PERSONAS), 'ACTUAL', 'PLANIFICADOR');
+  } else {
+    alert('Esta funcionalidad solo está disponible al ejecutar la aplicación dentro de Google Sheets o Google Apps Script.');
+  }
+}
+
+if (typeof google !== 'undefined' && google.script && google.script.run) {
+  document.getElementById('gas-sync-bar').style.display = 'flex';
+  showSyncStatus('Cargando el último horario guardado desde Google Sheets...', 'loading');
+  google.script.run
+    .withSuccessHandler(function(res) {
+      if (res && res.state && res.personas) {
+        PERSONAS = res.personas;
+        state = res.state;
+        renderTicks();
+        renderAll();
+        showSyncStatus('Horario actualizado desde Google Sheets con éxito', 'success');
+        // También cargamos la lista de guardados en la nube
+        refreshGasSaves();
+      } else {
+        showSyncStatus('No hay datos guardados previamente. Se inicializó con la plantilla base.', 'info');
+        buildState();
+        renderTicks();
+        renderAll();
+        refreshGasSaves();
+      }
+    })
+    .withFailureHandler(function(err) {
+      showSyncStatus('Error al cargar de Google Sheets: ' + err, 'error');
+      buildState();
+      renderTicks();
+      renderAll();
+    })
+    .loadPlannerState('ACTUAL', 'PLANIFICADOR');
+} else {
+  buildState();
+  renderTicks();
+  renderAll();
+}
 
 // Auto-guardar PRIMERA VERSION 19.06 en localStorage si no existe ya
 (function(){
