@@ -4,6 +4,12 @@
  * Este código está optimizado para funcionar directamente con tu pestaña "CONFIGS".
  */
 
+var SPREADSHEET_ID = "1jxakRiogHtf1BlanlGbFj1iFwapVtcR60cFOrRDgfkM";
+
+function getPlannerSpreadsheet() {
+  return SpreadsheetApp.openById(SPREADSHEET_ID);
+}
+
 function doGet(e) {
   var page = e.parameter.page || 'index';
   var templateName = 'index';
@@ -25,7 +31,7 @@ function doGet(e) {
  */
 function savePlannerState(stateJson, personasJson, configName, tipo) {
   try {
-    var ss = SpreadsheetApp.getActiveSpreadsheet();
+    var ss = getPlannerSpreadsheet();
     var sheet = ss.getSheetByName("CONFIGS");
     if (!sheet) {
       sheet = ss.insertSheet("CONFIGS");
@@ -89,7 +95,7 @@ function savePlannerState(stateJson, personasJson, configName, tipo) {
  */
 function loadPlannerState(configName, tipo) {
   try {
-    var ss = SpreadsheetApp.getActiveSpreadsheet();
+    var ss = getPlannerSpreadsheet();
     var sheet = ss.getSheetByName("CONFIGS");
     if (!sheet) return null;
     
@@ -130,7 +136,7 @@ function loadPlannerState(configName, tipo) {
  */
 function getSavesList() {
   try {
-    var ss = SpreadsheetApp.getActiveSpreadsheet();
+    var ss = getPlannerSpreadsheet();
     var sheet = ss.getSheetByName("CONFIGS");
     if (!sheet) return [];
     
