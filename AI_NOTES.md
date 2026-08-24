@@ -2,12 +2,17 @@
 
 Memoria compartida entre Codex, Claude Code, Google AI Studio y el usuario.
 
-## 2026-08-24 — Claude — Encabezado rosado
+## 2026-08-24 — Claude — Versionado semántico (v9 → v9.1) + encabezado rosado
 
-Resumen: A pedido del usuario se cambió el color del `<h1>` ("SUMAQ Mercados — Planificador de Turnos v9") de verde (`#0f6e56`) a rosado (`#E0367A`).
+Resumen:
+1. Se adoptó versionado semántico para el número de versión visible (título de pestaña, `<h1>`, `Code.gs`): cambios chicos (visuales, textos, ajustes menores) suben el decimal (v9.1, v9.2...); cambios grandes de funcionalidad suben el entero (v10.0, v11.0...). A partir de ahora cada cambio publicado debe actualizar este número.
+2. Se cambió el color del `<h1>` ("SUMAQ Mercados — Planificador de Turnos") de verde (`#0f6e56`) a rosado (`#E0367A`) — contado como cambio chico, v9 → v9.1.
+3. **Importante:** la key de `localStorage` (`sumaq_turnos_v9` en index.html) se dejó intacta a propósito — NO se renombra con cada bump de versión visible, porque cambiarla borraría el guardado local de los usuarios en su navegador (el guardado en Google Sheets no se ve afectado). Esa key solo debería cambiar si hay una razón técnica real (ej. migración de formato de datos), no por seguir el número de versión visible.
 
 Archivos modificados:
-- index.html
+- index.html (título, h1, versión)
+- Code.gs (título del HtmlService)
+- AI_NOTES.md
 
 Comandos ejecutados:
 - Verificación visual en navegador (Browser pane).
@@ -15,7 +20,7 @@ Comandos ejecutados:
 Estado de publicación: publicado con `git push` y `clasp push` + `clasp deploy` (deployment activo en `.deployment-id`).
 
 Pendientes o riesgos:
-- Ninguno detectado. Cambio puramente visual.
+- Ninguno detectado. Recordar mantener el número de versión sincronizado en index.html (título + h1) y Code.gs en cada publicación futura.
 
 ---
 

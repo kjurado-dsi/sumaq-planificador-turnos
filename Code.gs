@@ -21,7 +21,7 @@ function doGet(e) {
   
   return HtmlService.createTemplateFromFile(templateName)
     .evaluate()
-    .setTitle('SUMAQ — Planificador v9')
+    .setTitle('SUMAQ — Planificador v9.1')
     .setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL)
     .addMetaTag('viewport', 'width=device-width, initial-scale=1');
 }
