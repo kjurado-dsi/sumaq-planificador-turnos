@@ -925,30 +925,24 @@ function exportar(){
 const SAVE_KEY='sumaq_turnos_v9';
 let GAS_SAVES = [];
 
+function isGasEnv(){
+  return typeof google !== 'undefined' && google.script && google.script.run;
+}
 function saveConfig(){
   const name=document.getElementById('save-name').value.trim();
   if(!name){alert('Escribe un nombre primero.');return;}
-  const saves=JSON.parse(localStorage.getItem(SAVE_KEY)||'[]');
-  const idx=saves.findIndex(s=>s.name===name);
-  const cfg={name,date:new Date().toLocaleDateString('es-PE'),
-    state:JSON.parse(JSON.stringify(state)),
-    personas:JSON.parse(JSON.stringify(PERSONAS))};
-  if(idx>=0){if(!confirm('¿Sobreescribir "'+name+'"?'))return;saves[idx]=cfg;}
-  else saves.push(cfg);
-  localStorage.setItem(SAVE_KEY,JSON.stringify(saves));
   document.getElementById('save-name').value='';
-  renderSaves();
   const btn=document.querySelector('[onclick="saveConfig()"]');
-  btn.textContent='✅ Guardado';btn.style.background='#1D9E75';
-  setTimeout(()=>{btn.textContent='💾 Guardar';btn.style.background='#534AB7';},1500);
 
-  // Guardar en la nube (Google Sheets) si está habilitado
-  if (typeof google !== 'undefined' && google.script && google.script.run) {
+  if (isGasEnv()) {
+    // Entorno Apps Script: guardar solo en la nube (Google Sheets), sin copia local.
     showSyncStatus('Guardando "' + name + '" en Google Sheets...', 'loading');
     google.script.run
       .withSuccessHandler(function(res) {
         if (res && res.success) {
           showSyncStatus('¡Configuración "' + name + '" guardada en la hoja!', 'success');
+          btn.textContent='✅ Guardado';btn.style.background='#1D9E75';
+          setTimeout(()=>{btn.textContent='💾 Guardar';btn.style.background='#534AB7';},1500);
           refreshGasSaves();
         } else {
           showSyncStatus('Error al guardar en Sheets: ' + (res ? res.error : 'desconocido'), 'error');
@@ -958,7 +952,21 @@ function saveConfig(){
         showSyncStatus('Error: ' + err, 'error');
       })
       .savePlannerState(JSON.stringify(state), JSON.stringify(PERSONAS), name, 'PLANIFICADOR');
+    return;
   }
+
+  // Fuera de Apps Script (ej. GitHub Pages, pruebas locales): respaldo en localStorage.
+  const saves=JSON.parse(localStorage.getItem(SAVE_KEY)||'[]');
+  const idx=saves.findIndex(s=>s.name===name);
+  const cfg={name,date:new Date().toLocaleDateString('es-PE'),
+    state:JSON.parse(JSON.stringify(state)),
+    personas:JSON.parse(JSON.stringify(PERSONAS))};
+  if(idx>=0){if(!confirm('¿Sobreescribir "'+name+'"?'))return;saves[idx]=cfg;}
+  else saves.push(cfg);
+  localStorage.setItem(SAVE_KEY,JSON.stringify(saves));
+  renderSaves();
+  btn.textContent='✅ Guardado';btn.style.background='#1D9E75';
+  setTimeout(()=>{btn.textContent='💾 Guardar';btn.style.background='#534AB7';},1500);
 }
 function loadConfig(idx){
   const saves=JSON.parse(localStorage.getItem(SAVE_KEY)||'[]');
@@ -1009,34 +1017,30 @@ function deleteConfig(idx){
 }
 function renderSaves(){
   const el=document.getElementById('saves-list');
-  const localSaves=JSON.parse(localStorage.getItem(SAVE_KEY)||'[]');
-  
   let html = '';
-  
-  if (typeof google !== 'undefined' && google.script && google.script.run) {
-    // Si tenemos guardados en Google Sheets
-    if (GAS_SAVES.length > 0) {
-      html += GAS_SAVES.map((s) =>
-        '<div class="save-row" style="background:#f0faf6;border-left:3px solid #1D9E75;margin-bottom:4px">' +
-        '<div class="save-row-name" style="font-weight:700">' + s.name + ' <span style="font-size:8px;color:#1D9E75;font-weight:normal">(Nube)</span></div>' +
-        '<div class="save-row-date" style="font-size:9px;color:#666">' + s.date + ' • por ' + s.author + '</div>' +
-        '<button class="btn-load" style="background:#1D9E75" onclick="loadGasConfig(\'' + s.name + '\')">Cargar</button>' +
-        '</div>'
-      ).join('');
-    }
-  }
-  
-  if (localSaves.length > 0) {
+
+  if (isGasEnv()) {
+    // Entorno Apps Script: solo mostramos lo guardado en Google Sheets.
+    html += GAS_SAVES.map((s) =>
+      '<div class="save-row" style="background:#f0faf6;border-left:3px solid #1D9E75;margin-bottom:4px">' +
+      '<div class="save-row-name" style="font-weight:700">' + s.name + '</div>' +
+      '<div class="save-row-date" style="font-size:9px;color:#666">' + s.date + ' • por ' + s.author + '</div>' +
+      '<button class="btn-load" style="background:#1D9E75" onclick="loadGasConfig(\'' + s.name + '\')">Cargar</button>' +
+      '</div>'
+    ).join('');
+  } else {
+    // Fuera de Apps Script: fallback local.
+    const localSaves=JSON.parse(localStorage.getItem(SAVE_KEY)||'[]');
     html += localSaves.map((s,i)=>
       '<div class="save-row">'+
-      '<div class="save-row-name">'+s.name+' <span style="font-size:8px;color:#aaa">(Local)</span></div>'+
+      '<div class="save-row-name">'+s.name+'</div>'+
       '<div class="save-row-date">'+s.date+'</div>'+
       '<button class="btn-load" onclick="loadConfig('+i+')">Cargar</button>'+
       '<button class="btn-del" onclick="deleteConfig('+i+')">✕</button>'+
       '</div>'
     ).join('');
   }
-  
+
   if (!html) {
     el.innerHTML='<div style="font-size:10px;color:#aaa;font-style:italic">No hay configuraciones guardadas.</div>';
   } else {
