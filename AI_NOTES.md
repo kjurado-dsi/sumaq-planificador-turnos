@@ -2,6 +2,23 @@
 
 Memoria compartida entre Codex, Claude Code, Google AI Studio y el usuario.
 
+## 2026-08-24 — Claude — Encabezado rosado
+
+Resumen: A pedido del usuario se cambió el color del `<h1>` ("SUMAQ Mercados — Planificador de Turnos v9") de verde (`#0f6e56`) a rosado (`#E0367A`).
+
+Archivos modificados:
+- index.html
+
+Comandos ejecutados:
+- Verificación visual en navegador (Browser pane).
+
+Estado de publicación: publicado con `git push` y `clasp push` + `clasp deploy` (deployment activo en `.deployment-id`).
+
+Pendientes o riesgos:
+- Ninguno detectado. Cambio puramente visual.
+
+---
+
 ## 2026-08-18 — Codex — Configuración piloto para Claude, Codex y Gemini
 
 Se alinearon las instrucciones del proyecto para trabajar con una fuente común
