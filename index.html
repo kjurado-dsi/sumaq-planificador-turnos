@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1.0">
-<title>SUMAQ — Planificador v9.1</title>
+<title>SUMAQ — Planificador v9.2</title>
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
 body{font-family:Arial,sans-serif;font-size:13px;background:#f5f5f2;color:#2c2c2a;padding:14px}
@@ -241,10 +241,10 @@ pre#exp{display:none;margin-top:10px;font-size:10px;background:#f1efe8;padding:1
     <span id="gas-sync-status-icon">🔄</span>
     <span id="gas-sync-text">Conectado a Google Sheets</span>
   </div>
-  <button onclick="syncToGoogleSheets()" style="font-size:11px;padding:4px 10px;background:#0f6e56;color:#fff;border:none;border-radius:4px;cursor:pointer">💾 Guardar Horario Actual en Sheets</button>
+  <button onclick="syncToGoogleSheets()" title="Este es el horario que se carga automáticamente cada vez que alguien abre la app. Para copias con nombre, usa 'Configuraciones guardadas' más abajo." style="font-size:11px;padding:4px 10px;background:#0f6e56;color:#fff;border:none;border-radius:4px;cursor:pointer">💾 Actualizar horario en vivo (auto-carga)</button>
 </div>
 
-<h1>SUMAQ Mercados — Planificador de Turnos v9.1</h1>
+<h1>SUMAQ Mercados — Planificador de Turnos v9.2</h1>
 <p class="sub">Corredor · Pasillos · Snap 30 min · ★ mayor volumen · <b>↕ Arrastra arriba/abajo = cambiar puesto · ↔ Extremos = ajustar horario</b></p>
 
 <div class="layout" id="layout">
@@ -273,10 +273,11 @@ pre#exp{display:none;margin-top:10px;font-size:10px;background:#f1efe8;padding:1
   <pre id="exp"></pre>
   <div class="hint">← → Centro de barra = mover · Extremos = duración · ↕ Arrastra arriba/abajo = cambiar puesto</div>
   <div class="saves-box">
-    <div class="saves-title">💾 Configuraciones guardadas</div>
+    <div class="saves-title">📁 Configuraciones guardadas</div>
+    <div style="font-size:10px;color:#888;margin-bottom:8px">Copias con nombre para recuperar después (a diferencia de "Actualizar horario en vivo", estas NO se cargan solas al abrir la app).</div>
     <div style="display:flex;gap:6px;margin-bottom:10px">
       <input type="text" id="save-name" placeholder="Nombre (ej: Semana normal, Feriado...)" style="flex:1;font-size:11px;border:0.5px solid #b4b2a9;border-radius:5px;padding:6px 9px;background:#f5f5f2">
-      <button onclick="saveConfig()" style="font-size:11px;padding:6px 14px;border:0.5px solid #534AB7;border-radius:6px;background:#534AB7;color:#fff;cursor:pointer">💾 Guardar</button>
+      <button onclick="saveConfig()" style="font-size:11px;padding:6px 14px;border:0.5px solid #534AB7;border-radius:6px;background:#534AB7;color:#fff;cursor:pointer">💾 Guardar copia</button>
     </div>
     <div id="saves-list"></div>
   </div>

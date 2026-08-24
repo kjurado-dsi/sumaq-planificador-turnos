@@ -2,6 +2,29 @@
 
 Memoria compartida entre Codex, Claude Code, Google AI Studio y el usuario.
 
+## 2026-08-24 — Claude — Aclara textos "Guardar" (v9.1 → v9.2)
+
+Resumen: El usuario reportó confusión entre el botón superior "Guardar Horario Actual en Sheets" y la sección inferior "Configuraciones guardadas" — ambos parecen "guardar" pero tienen comportamiento distinto (arriba sobrescribe la fila `"ACTUAL"` que se auto-carga al abrir la app; abajo crea copias con nombre que solo se cargan manualmente). Se aclaró con texto/tooltip:
+1. Botón superior renombrado a "💾 Actualizar horario en vivo (auto-carga)" con `title` explicando que es el que se carga automáticamente.
+2. Sección inferior renombrada a "📁 Configuraciones guardadas" con una línea de descripción aclarando que son copias con nombre que NO se cargan solas, y su botón pasó a decir "💾 Guardar copia".
+
+También se detectó y explicó al usuario (no requiere cambio de código, es comportamiento esperado) por qué un trabajador borrado ("PRUEBA123") seguía reapareciendo: borrar localmente no actualiza la fila `"ACTUAL"` en Sheets — hay que volver a apretar "Actualizar horario en vivo" después de borrar para persistir el cambio.
+
+Archivos modificados:
+- index.html (textos botón/sección, versión)
+- Code.gs (versión)
+- AI_NOTES.md
+
+Comandos ejecutados:
+- Verificación con `get_page_text` en Browser pane.
+
+Estado de publicación: publicado con `git push` y `clasp push` + `clasp deploy`.
+
+Pendientes o riesgos:
+- Posible mejora futura (no implementada, no solicitada aún): auto-guardar en Sheets cada vez que se borra/agrega una persona, para eliminar por completo el paso manual de "Actualizar horario en vivo". Se le preguntó al usuario si lo quiere y no ha respondido esa parte todavía.
+
+---
+
 ## 2026-08-24 — Claude — Versionado semántico (v9 → v9.1) + encabezado rosado
 
 Resumen:
